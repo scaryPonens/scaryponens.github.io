@@ -1,1 +1,1 @@
-![DALL·E 2024-05-17 11 18 24 - A green yet technological landscape featuring humans and robots working together  The scene includes renewable energy sources such as wind turbines, s](https://github.com/scaryPonens/scaryPonens/assets/165761/f3716004-2ff5-4561-9bc6-0557b204078f)
+![Image from iOS](https://github.com/user-attachments/assets/d9439d0c-5bd2-45b4-9206-c6d5bddef5c1)
