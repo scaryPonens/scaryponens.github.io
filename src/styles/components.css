@@ -254,7 +254,9 @@ section {
 
 .button-icon {
   font-size: 1rem;
-  filter: drop-shadow(var(--glow-intensity) currentColor);
+  display: inline-block;
+  width: 1em;
+  text-align: center;
 }
 
 .button-text {

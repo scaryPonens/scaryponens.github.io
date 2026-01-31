@@ -13,7 +13,6 @@ function App() {
         <div className="content">
           <Header />
           <About />
-          <Projects />
           <Contact />
         </div>
       </div>
