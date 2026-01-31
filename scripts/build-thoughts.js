@@ -1,4 +1,4 @@
-import { readdir, readFile, mkdir, writeFile } from 'fs/promises'
+import { readdir, readFile, mkdir, writeFile, copyFile, stat } from 'fs/promises'
 import { join, dirname, basename, extname } from 'path'
 import { fileURLToPath } from 'url'
 import { marked } from 'marked'
@@ -79,6 +79,31 @@ function escapeHtml(text) {
   return text.replace(/[&<>"']/g, m => map[m])
 }
 
+// Copy assets directory recursively
+async function copyAssets(sourceDir, destDir) {
+  try {
+    const files = await readdir(sourceDir)
+    await mkdir(destDir, { recursive: true })
+    
+    for (const file of files) {
+      const sourcePath = join(sourceDir, file)
+      const destPath = join(destDir, file)
+      const fileStat = await stat(sourcePath)
+      
+      if (fileStat.isDirectory()) {
+        await copyAssets(sourcePath, destPath)
+      } else {
+        await copyFile(sourcePath, destPath)
+      }
+    }
+  } catch (error) {
+    // Assets directory might not exist, which is fine
+    if (error.code !== 'ENOENT') {
+      console.warn(`Warning: Could not copy assets: ${error.message}`)
+    }
+  }
+}
+
 // Process markdown files
 async function buildThoughts() {
   try {
@@ -87,6 +112,14 @@ async function buildThoughts() {
 
     // Read CSS
     const css = await getBlogCSS()
+
+    // Copy assets directory to output directories
+    const assetsSourceDir = join(thoughtsDir, 'assets')
+    const assetsOutputDir = join(outputDir, 'assets')
+    const assetsPublicDir = join(publicBlogDir, 'assets')
+    
+    await copyAssets(assetsSourceDir, assetsOutputDir)
+    await copyAssets(assetsSourceDir, assetsPublicDir)
 
     // Read all markdown files from thoughts directory
     const files = await readdir(thoughtsDir)
