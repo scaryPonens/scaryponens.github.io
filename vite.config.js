@@ -8,4 +8,7 @@ import markdownRaw from './plugins/vite-plugin-markdown-raw.js'
 export default defineConfig({
   plugins: [markdownRaw(), react()], // Markdown plugin first so it transforms before React
   base: '/',
+  build: {
+    sourcemap: false, // Disable source maps to avoid .jsx file references
+  },
 })

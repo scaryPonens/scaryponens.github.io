@@ -150,6 +150,12 @@ async function generateBlogPages() {
     // Create blog directory
     mkdirSync(blogDir, { recursive: true });
     
+    // Create .nojekyll file to prevent GitHub Pages from processing with Jekyll
+    // This ensures proper MIME types for all files
+    const nojekyllPath = resolve(distDir, '.nojekyll');
+    writeFileSync(nojekyllPath, '', 'utf-8');
+    console.log('Created .nojekyll file');
+    
     // Generate HTML file for each post
     for (const post of posts) {
       const slug = createSlug(post.filename);
