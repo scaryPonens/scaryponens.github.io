@@ -7,14 +7,11 @@ function About() {
         </h2>
         <div className="retro-panel">
           <p className="retro-text">
-            This site is a notebook for software tooling, LLM applications, 
-            and systems work: practical experiments, partial conclusions, and lessons 
-            learned the hard way.
+            Welcome to my digital space! This is a retro-themed homepage built with modern web technologies.
           </p>
           <p className="retro-text">
-            I map the space where distributed energy resources become collective actors, 
-            shaping energy markets and powergrids through real-time control, constraint, 
-            and consequence.
+            I'm passionate about creating things that blend nostalgia with innovation. The Game of Life above
+            represents the ever-evolving nature of code and creativity.
           </p>
           <p className="retro-text">
             Feel free to explore and connect!

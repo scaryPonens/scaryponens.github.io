@@ -1,8 +1,9 @@
 function Contact() {
   const socialLinks = [
-    { name: 'GitHub', url: 'https://github.com/scaryponens', icon: 'fa-brands fa-github' },
-    { name: 'LinkedIn', url: 'https://www.linkedin.com/in/reubenpeterpaul/', icon: 'fa-brands fa-linkedin' },
-    { name: 'Email', url: 'mailto:reuben.peterpaul@protonmail.com', icon: 'fa-solid fa-envelope' },
+    { name: 'GitHub', url: 'https://github.com/scaryponens', icon: '◉' },
+    { name: 'Twitter', url: '#', icon: '◉' },
+    { name: 'LinkedIn', url: '#', icon: '◉' },
+    { name: 'Email', url: 'mailto:your@email.com', icon: '◉' },
   ]
 
   return (
@@ -22,7 +23,7 @@ function Contact() {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <i className={`button-icon ${link.icon}`}></i>
+                <span className="button-icon">{link.icon}</span>
                 <span className="button-text">{link.name}</span>
               </a>
             ))}
