@@ -146,11 +146,24 @@ async function buildProjects() {
       const titleMatch = markdown.match(/^#\s+(.+)$/m)
       let title = titleMatch ? titleMatch[1] : basename(file, '.md')
       
-      // Extract excerpt (first paragraph or first 150 chars)
-      const excerptMatch = markdown.match(/^#\s+.+?\n\n(.+?)(?:\n\n|$)/s)
-      const excerpt = excerptMatch 
-        ? excerptMatch[1].replace(/[#*`]/g, '').trim().substring(0, 150) + '...'
-        : markdown.replace(/^#\s+.+?\n\n/, '').substring(0, 150).trim() + '...'
+      // Extract excerpt (first paragraph)
+      // Remove the title line, then find the first paragraph (text until next blank line or heading)
+      const contentAfterTitle = markdown.replace(/^#\s+.+?\n+/, '')
+      // Match first paragraph: text until next blank line, heading, or end of string
+      const firstParagraphMatch = contentAfterTitle.match(/^(.+?)(?:\n\n|\n#|$)/s)
+      let excerpt = ''
+      if (firstParagraphMatch) {
+        // Clean up markdown syntax and get the plain text
+        excerpt = firstParagraphMatch[1]
+          .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1') // Remove markdown links, keep text
+          .replace(/[#*`_~]/g, '') // Remove markdown formatting
+          .replace(/\n+/g, ' ') // Replace newlines with spaces
+          .trim()
+      }
+      // Fallback if no paragraph found
+      if (!excerpt) {
+        excerpt = contentAfterTitle.replace(/[#*`_~]/g, '').substring(0, 150).trim() + '...'
+      }
       
       // Generate HTML file
       const html = generateHTML(title, htmlContent, css)
