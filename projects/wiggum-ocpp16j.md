@@ -1,6 +1,6 @@
 # A Nerd's Poetic Journey into OCPP 1.6j
 
-In the realm of electric dreams, where volts and amps dance in silent harmony, there lies a language spoken between chargers and the clouds. This tongue, known to mortals as OCPP 1.6j, has long been a scroll I had yet to unravel. But my true quest wasn't really about OCPP at all—it was about exploring a different kind of methodology, one I've come to call the "Ralph Wiggum Iterative Approach."
+In the realm of electric dreams, where volts and amps dance in silent harmony, there lies a language spoken between chargers and the clouds. This tongue, known to mortals as OCPP 1.6j, has long been a scroll I had yet to unravel. But my true quest wasn't really about OCPP at all—it was about exploring a different kind of methodology, one I've heard the interwebs and youtubes call the "Ralph Wiggum Iterative Approach."
 
 The implementation of OCPP 1.6j was merely the canvas upon which I painted this experiment. My primary objective was to investigate how one might approach a complex problem through iterative, exploratory coding—without the safety net of CLI tooling, without the comfort of established patterns. I wanted to see what would happen if I just... started coding, and let the cursor agents guide me through the chaos. My vessel for this journey? The humble repository, `scaryPonens/ocpp1.6j-basics`.
 
