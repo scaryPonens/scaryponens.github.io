@@ -8,7 +8,9 @@ function BlogList() {
     fetch('/blog/manifest.json')
       .then(res => res.json())
       .then(data => {
-        setBlogs(data)
+        // Sort by date descending (newest first)
+        const sorted = [...data].sort((a, b) => new Date(b.date) - new Date(a.date))
+        setBlogs(sorted)
         setLoading(false)
       })
       .catch(err => {
@@ -16,6 +18,15 @@ function BlogList() {
         setLoading(false)
       })
   }, [])
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    })
+  }
 
   if (loading || blogs.length === 0) {
     return null
@@ -33,6 +44,7 @@ function BlogList() {
               className="blog-card"
             >
               <h3 className="blog-title">{blog.title}</h3>
+              <span className="blog-date">{formatDate(blog.date)}</span>
             </a>
           ))}
         </div>

@@ -17,7 +17,11 @@
 
 /* Section Styles */
 section {
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
+}
+
+section:first-of-type {
+  margin-top: 0;
 }
 
 .section-container {
@@ -26,10 +30,18 @@ section {
 }
 
 .section-title {
-  margin-bottom: 1.5rem;
-  font-size: 1.25rem;
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  font-size: 1.5em;
   font-weight: 600;
+  line-height: 1.25;
   color: var(--color-text);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 0.3em;
+}
+
+.section-title:first-child {
+  margin-top: 0;
 }
 
 /* About Section */
@@ -88,7 +100,10 @@ section {
 .blog-card {
   text-decoration: none;
   color: inherit;
-  display: block;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
   padding: 0;
 }
 
@@ -99,8 +114,16 @@ section {
 .blog-title {
   font-size: 1.125rem;
   font-weight: 600;
-  margin-bottom: 0.25rem;
+  margin: 0;
   color: var(--color-text);
+  flex: 1;
+}
+
+.blog-date {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .blog-date {
@@ -153,6 +176,17 @@ section {
   }
   
   .section-title {
-    font-size: 1.125rem;
+    font-size: 1.25em;
+    margin-top: 1.25rem;
+  }
+  
+  .blog-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+  
+  .blog-date {
+    font-size: 0.8125rem;
   }
 }

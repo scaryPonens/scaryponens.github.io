@@ -28,7 +28,7 @@ function DarkModeToggle() {
       aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
       title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
     >
-      {isDark ? '☀️' : '🌙'}
+      <i className={isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon'}></i>
     </button>
   )
 }

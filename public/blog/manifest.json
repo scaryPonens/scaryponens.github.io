@@ -1,9 +1,9 @@
 [
   {
     "title": "Example Thought",
-    "slug": "example-thought",
-    "date": "2026-01-31",
+    "slug": "example-thought.md",
+    "date": "2026-01-02",
     "excerpt": "This is an example markdown file to demonstrate the build process....",
-    "filename": "example-thought.html"
+    "filename": "20260102-example-thought.html"
   }
 ]

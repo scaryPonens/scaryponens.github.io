@@ -28,9 +28,9 @@ marked.setOptions({
   gfm: true
 })
 
-// Read GitHub dark mode CSS
-async function getGitHubCSS() {
-  const cssPath = join(projectRoot, 'src', 'styles', 'github-markdown-dark.css')
+// Read blog CSS
+async function getBlogCSS() {
+  const cssPath = join(projectRoot, 'src', 'styles', 'blog.css')
   return await readFile(cssPath, 'utf-8')
 }
 
@@ -45,11 +45,22 @@ function generateHTML(title, content, css) {
   <style>
 ${css}
   </style>
+  <script>
+    // Initialize dark mode on page load
+    (function() {
+      const stored = localStorage.getItem('darkMode');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      
+      if (stored === 'true' || (stored === null && prefersDark)) {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+  </script>
 </head>
 <body>
   <div class="markdown-body">
-    <nav style="margin-bottom: 2em;">
-      <a href="/" style="color: #58a6ff; text-decoration: none;">← Back to home</a>
+    <nav>
+      <a href="/">← Back to home</a>
     </nav>
 ${content}
   </div>
@@ -75,7 +86,7 @@ async function buildThoughts() {
     await mkdir(outputDir, { recursive: true })
 
     // Read CSS
-    const css = await getGitHubCSS()
+    const css = await getBlogCSS()
 
     // Read all markdown files from thoughts directory
     const files = await readdir(thoughtsDir)
@@ -100,11 +111,44 @@ async function buildThoughts() {
       
       // Extract title from first h1 or use filename
       const titleMatch = markdown.match(/^#\s+(.+)$/m)
-      const title = titleMatch ? titleMatch[1] : basename(file, '.md')
+      let title = titleMatch ? titleMatch[1] : basename(file, '.md')
       
-      // Extract date from filename if in format YYYY-MM-DD or similar
-      const dateMatch = file.match(/(\d{4})-(\d{1,2})-(\d{1,2})/)
-      const date = dateMatch ? `${dateMatch[1]}-${dateMatch[2].padStart(2, '0')}-${dateMatch[3].padStart(2, '0')}` : null
+      // Extract date from filename if in format YYYYMMDD- or YYYY-MM-DD-
+      // Support both formats: 20260102-example.md or 2026-01-02-example.md
+      let date = null
+      let datePrefix = ''
+      let slug = basename(file, '.md')
+      
+      // Try YYYYMMDD format first (e.g., 20260102-example-thought.md)
+      const dateMatch1 = file.match(/^(\d{8})-(.+)$/)
+      if (dateMatch1) {
+        const dateStr = dateMatch1[1]
+        date = `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`
+        datePrefix = dateMatch1[1] + '-'
+        slug = dateMatch1[2]
+        // Remove date prefix from title if it exists
+        if (title.startsWith(datePrefix)) {
+          title = title.substring(datePrefix.length)
+        }
+      } else {
+        // Try YYYY-MM-DD format (e.g., 2026-01-02-example-thought.md)
+        const dateMatch2 = file.match(/^(\d{4})-(\d{2})-(\d{2})-(.+)$/)
+        if (dateMatch2) {
+          date = `${dateMatch2[1]}-${dateMatch2[2]}-${dateMatch2[3]}`
+          datePrefix = `${dateMatch2[1]}-${dateMatch2[2]}-${dateMatch2[3]}-`
+          slug = dateMatch2[4]
+          // Remove date prefix from title if it exists
+          if (title.startsWith(datePrefix)) {
+            title = title.substring(datePrefix.length)
+          }
+        } else {
+          // Try legacy YYYY-MM-DD format (without dash after date)
+          const dateMatch3 = file.match(/(\d{4})-(\d{1,2})-(\d{1,2})/)
+          if (dateMatch3) {
+            date = `${dateMatch3[1]}-${dateMatch3[2].padStart(2, '0')}-${dateMatch3[3].padStart(2, '0')}`
+          }
+        }
+      }
       
       // Extract excerpt (first paragraph or first 150 chars)
       const excerptMatch = markdown.match(/^#\s+.+?\n\n(.+?)(?:\n\n|$)/s)
@@ -115,7 +159,7 @@ async function buildThoughts() {
       // Generate HTML file
       const html = generateHTML(title, htmlContent, css)
       
-      // Write HTML file
+      // Write HTML file - keep date prefix in filename
       const outputFileName = basename(file, '.md') + '.html'
       
       // Write to dist/blog/ (for production)
@@ -130,7 +174,7 @@ async function buildThoughts() {
       // Add to manifest
       blogManifest.push({
         title,
-        slug: basename(file, '.md'),
+        slug: slug,
         date: date || new Date().toISOString().split('T')[0],
         excerpt,
         filename: outputFileName
