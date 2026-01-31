@@ -1,20 +1,20 @@
 function Projects() {
   const projects = [
-    {
-      title: 'Project One',
-      description: 'A cool project description goes here.',
-      tech: ['React', 'TypeScript', 'Vite'],
-    },
-    {
-      title: 'Project Two',
-      description: 'Another project description.',
-      tech: ['JavaScript', 'CSS', 'HTML'],
-    },
-    {
-      title: 'Project Three',
-      description: 'Yet another project that showcases skills.',
-      tech: ['Node.js', 'Express', 'MongoDB'],
-    },
+    // {
+    //   title: 'Project One',
+    //   description: 'A cool project description goes here.',
+    //   tech: ['React', 'TypeScript', 'Vite'],
+    // },
+    // {
+    //   title: 'Project Two',
+    //   description: 'Another project description.',
+    //   tech: ['JavaScript', 'CSS', 'HTML'],
+    // },
+    // {
+    //   title: 'Project Three',
+    //   description: 'Yet another project that showcases skills.',
+    //   tech: ['Node.js', 'Express', 'MongoDB'],
+    // },
   ]
 
   return (
