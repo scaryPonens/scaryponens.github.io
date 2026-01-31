@@ -7,7 +7,7 @@ function Projects() {
     },
     {
       title: 'Project Two',
-      description: 'Another awesome project with retro vibes.',
+      description: 'Another project description.',
       tech: ['JavaScript', 'CSS', 'HTML'],
     },
     {
@@ -20,13 +20,10 @@ function Projects() {
   return (
     <section className="projects-section">
       <div className="section-container">
-        <h2 className="section-title">
-          <span className="neon-text">[ PROJECTS ]</span>
-        </h2>
+        <h2 className="section-title">Projects</h2>
         <div className="projects-grid">
           {projects.map((project, index) => (
             <div key={index} className="project-card">
-              <div className="card-border"></div>
               <h3 className="project-title">{project.title}</h3>
               <p className="project-description">{project.description}</p>
               <div className="project-tech">
