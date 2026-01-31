@@ -1,21 +1,25 @@
+import { useState, useEffect } from 'react'
+
 function Projects() {
-  const projects = [
-    // {
-    //   title: 'Project One',
-    //   description: 'A cool project description goes here.',
-    //   tech: ['React', 'TypeScript', 'Vite'],
-    // },
-    // {
-    //   title: 'Project Two',
-    //   description: 'Another project description.',
-    //   tech: ['JavaScript', 'CSS', 'HTML'],
-    // },
-    // {
-    //   title: 'Project Three',
-    //   description: 'Yet another project that showcases skills.',
-    //   tech: ['Node.js', 'Express', 'MongoDB'],
-    // },
-  ]
+  const [projects, setProjects] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/projects/manifest.json')
+      .then(res => res.json())
+      .then(data => {
+        setProjects(data)
+        setLoading(false)
+      })
+      .catch(err => {
+        console.error('Error loading projects manifest:', err)
+        setLoading(false)
+      })
+  }, [])
+
+  if (loading || projects.length === 0) {
+    return null
+  }
 
   return (
     <section className="projects-section">
@@ -23,17 +27,14 @@ function Projects() {
         <h2 className="section-title">Projects</h2>
         <div className="projects-grid">
           {projects.map((project, index) => (
-            <div key={index} className="project-card">
+            <a 
+              key={index} 
+              href={`/projects/${project.filename}`}
+              className="project-card"
+            >
               <h3 className="project-title">{project.title}</h3>
-              <p className="project-description">{project.description}</p>
-              <div className="project-tech">
-                {project.tech.map((tech, techIndex) => (
-                  <span key={techIndex} className="tech-tag">
-                    {tech}
-                  </span>
-                ))}
-              </div>
-            </div>
+              <p className="project-description">{project.excerpt}</p>
+            </a>
           ))}
         </div>
       </div>

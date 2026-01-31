@@ -15,6 +15,9 @@ dist-ssr
 # Generated blog files
 public/blog/*
 
+# Generated project files
+public/projects/*
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

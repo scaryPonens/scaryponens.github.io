@@ -62,7 +62,14 @@ section:first-of-type {
 }
 
 .project-card {
+  text-decoration: none;
+  color: inherit;
+  display: block;
   padding: 0;
+}
+
+.project-card:hover .project-title {
+  color: var(--color-accent);
 }
 
 .project-title {
