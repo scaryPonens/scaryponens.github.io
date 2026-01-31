@@ -7,10 +7,10 @@ function Header() {
         <div className="game-of-life-wrapper">
           <GameOfLife />
         </div>
-        <h1 className="glitch" data-text="scaryponens">
-          scaryponens
+        <h1 className="glitch" data-text="Reuben Peter-Paul">
+          Reuben Peter-Paul
         </h1>
-        <p className="subtitle">80s Retro Gamer Homepage</p>
+        <p className="subtitle">Architect of Systems That Behave When Reality Misbehaves</p>
       </div>
     </header>
   )

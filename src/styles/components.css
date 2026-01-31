@@ -254,11 +254,184 @@ section {
 
 .button-icon {
   font-size: 1rem;
-  filter: drop-shadow(var(--glow-intensity) currentColor);
+  display: inline-block;
+  width: 1em;
+  text-align: center;
 }
 
 .button-text {
   letter-spacing: 1px;
+}
+
+/* Blog Section */
+.blog-section {
+  margin-bottom: 80px;
+}
+
+.blog-posts {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.blog-post {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  transition: all 0.3s;
+}
+
+.blog-post:hover {
+  border-color: var(--neon-cyan);
+  box-shadow: var(--glow-subtle) var(--neon-cyan);
+}
+
+.blog-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 20px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.3s;
+  pointer-events: none; /* Let the link handle clicks */
+}
+
+.blog-post-link:hover .blog-header {
+  background: rgba(0, 255, 255, 0.05);
+}
+
+.blog-date {
+  color: var(--neon-cyan);
+  font-size: 0.7rem;
+  font-family: 'Press Start 2P', monospace;
+  white-space: nowrap;
+}
+
+.blog-title {
+  color: var(--neon-green);
+  font-size: 0.9rem;
+  font-family: 'Press Start 2P', monospace;
+  flex: 1;
+}
+
+.blog-toggle {
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  transition: transform 0.3s;
+}
+
+.blog-content {
+  padding: 0 20px 20px 20px;
+  border-top: 1px solid var(--border-color);
+  animation: expand 0.3s ease-out;
+  overflow: hidden;
+}
+
+@keyframes expand {
+  from {
+    max-height: 0;
+    opacity: 0;
+  }
+  to {
+    max-height: 5000px;
+    opacity: 1;
+  }
+}
+
+/* Markdown Content Styling */
+.blog-content .blog-markdown-h1,
+.blog-content .blog-markdown-h2,
+.blog-content .blog-markdown-h3 {
+  color: var(--neon-cyan);
+  margin-top: 20px;
+  margin-bottom: 15px;
+  font-family: 'Press Start 2P', monospace;
+  text-transform: uppercase;
+}
+
+.blog-content .blog-markdown-h1 {
+  font-size: 1.2rem;
+}
+
+.blog-content .blog-markdown-h2 {
+  font-size: 1rem;
+}
+
+.blog-content .blog-markdown-h3 {
+  font-size: 0.8rem;
+}
+
+.blog-content .blog-markdown-p {
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  line-height: 1.8;
+  margin-bottom: 15px;
+  font-family: 'Press Start 2P', monospace;
+}
+
+.blog-content .blog-markdown-a {
+  color: var(--neon-cyan);
+  text-decoration: none;
+  border-bottom: 1px solid var(--neon-cyan);
+  transition: all 0.3s;
+}
+
+.blog-content .blog-markdown-a:hover {
+  color: var(--neon-green);
+  border-bottom-color: var(--neon-green);
+  text-shadow: var(--glow-subtle) var(--neon-green);
+}
+
+.blog-content .blog-markdown-code-inline {
+  background: var(--bg-darker);
+  color: var(--neon-yellow);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.65rem;
+  font-family: 'Courier New', monospace;
+  border: 1px solid var(--border-color);
+}
+
+.blog-content .blog-markdown-pre {
+  background: var(--bg-darker);
+  border: 1px solid var(--neon-cyan);
+  padding: 15px;
+  border-radius: 5px;
+  overflow-x: auto;
+  margin: 15px 0;
+  box-shadow: var(--glow-subtle) var(--neon-cyan);
+}
+
+.blog-content .blog-markdown-code-block {
+  color: var(--neon-green);
+  font-size: 0.65rem;
+  font-family: 'Courier New', monospace;
+  display: block;
+  white-space: pre;
+}
+
+.blog-content .blog-markdown-ul,
+.blog-content .blog-markdown-ol {
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  margin: 15px 0;
+  padding-left: 30px;
+  font-family: 'Press Start 2P', monospace;
+}
+
+.blog-content .blog-markdown-li {
+  margin-bottom: 10px;
+  line-height: 1.8;
+}
+
+.blog-content .blog-markdown-blockquote {
+  border-left: 3px solid var(--neon-magenta);
+  padding-left: 15px;
+  margin: 15px 0;
+  color: var(--text-secondary);
+  font-style: italic;
+  font-size: 0.7rem;
+  font-family: 'Press Start 2P', monospace;
 }
 
 /* Responsive Design */
@@ -294,6 +467,30 @@ section {
   
   .game-of-life-container {
     transform: scale(0.8);
+  }
+  
+  .blog-date {
+    font-size: 0.6rem;
+  }
+  
+  .blog-title {
+    font-size: 0.7rem;
+  }
+  
+  .blog-content .blog-markdown-h1 {
+    font-size: 1rem;
+  }
+  
+  .blog-content .blog-markdown-h2 {
+    font-size: 0.8rem;
+  }
+  
+  .blog-content .blog-markdown-h3 {
+    font-size: 0.7rem;
+  }
+  
+  .blog-content .blog-markdown-p {
+    font-size: 0.6rem;
   }
 }
 
