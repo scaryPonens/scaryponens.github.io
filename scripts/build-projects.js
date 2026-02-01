@@ -3,6 +3,7 @@ import { join, dirname, basename, extname } from 'path'
 import { fileURLToPath } from 'url'
 import { marked } from 'marked'
 import hljs from 'highlight.js'
+import matter from 'gray-matter'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -137,34 +138,36 @@ async function buildProjects() {
     // Process each markdown file
     for (const file of markdownFiles) {
       const filePath = join(projectsDir, file)
-      const markdown = await readFile(filePath, 'utf-8')
-      
-      // Convert markdown to HTML
-      const htmlContent = marked.parse(markdown)
-      
-      // Extract title from first h1 or use filename
-      const titleMatch = markdown.match(/^#\s+(.+)$/m)
-      let title = titleMatch ? titleMatch[1] : basename(file, '.md')
-      
-      // Extract excerpt (first paragraph)
-      // Remove the title line, then find the first paragraph (text until next blank line or heading)
-      const contentAfterTitle = markdown.replace(/^#\s+.+?\n+/, '')
-      // Match first paragraph: text until next blank line, heading, or end of string
-      const firstParagraphMatch = contentAfterTitle.match(/^(.+?)(?:\n\n|\n#|$)/s)
-      let excerpt = ''
-      if (firstParagraphMatch) {
-        // Clean up markdown syntax and get the plain text
-        excerpt = firstParagraphMatch[1]
-          .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1') // Remove markdown links, keep text
-          .replace(/[#*`_~]/g, '') // Remove markdown formatting
-          .replace(/\n+/g, ' ') // Replace newlines with spaces
-          .trim()
+      const rawMarkdown = await readFile(filePath, 'utf-8')
+      const { data, content } = matter(rawMarkdown)
+
+      // Convert body (no frontmatter) to HTML
+      const htmlContent = marked.parse(content)
+
+      // Title: frontmatter title, else first h1, else filename
+      let title = data.title
+      if (!title) {
+        const titleMatch = content.match(/^#\s+(.+)$/m)
+        title = titleMatch ? titleMatch[1] : basename(file, '.md')
       }
-      // Fallback if no paragraph found
+
+      // Excerpt: frontmatter tldr or excerpt, else first paragraph from body
+      let excerpt = data.tldr ?? data.excerpt ?? ''
       if (!excerpt) {
-        excerpt = contentAfterTitle.replace(/[#*`_~]/g, '').substring(0, 150).trim() + '...'
+        const contentAfterTitle = content.replace(/^#\s+.+?\n+/, '')
+        const firstParagraphMatch = contentAfterTitle.match(/^(.+?)(?:\n\n|\n#|$)/s)
+        if (firstParagraphMatch) {
+          excerpt = firstParagraphMatch[1]
+            .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1')
+            .replace(/[#*`_~]/g, '')
+            .replace(/\n+/g, ' ')
+            .trim()
+        }
+        if (!excerpt) {
+          excerpt = contentAfterTitle.replace(/[#*`_~]/g, '').substring(0, 150).trim() + '...'
+        }
       }
-      
+
       // Generate HTML file
       const html = generateHTML(title, htmlContent, css)
       

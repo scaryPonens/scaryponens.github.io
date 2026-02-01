@@ -1,4 +1,9 @@
-# Unlock Your Terminal’s Clipboard: Introducing termco-py
+---
+title: "Unlock Your Terminal's Clipboard: Introducing termco-py"
+tldr: Pipe any file from a remote terminal to your local clipboard with one command. A lightweight Python CLI using OSC 52.
+---
+
+# Unlock Your Terminal's Clipboard: Introducing termco-py
 
 As developers, we often find ourselves working in remote environments like Kubernetes pods or EC2 instances. A common challenge is moving data, especially large files, from these remote systems to our local clipboard. While tools like `scp` or SSH tunnels are great, they aren't always available or convenient, particularly in restricted or temporary environments. Opening a multi-megabyte log file in `vim` just to copy its contents can be slow and memory-intensive.
 
@@ -8,7 +13,7 @@ Enter `termco-py`, a lightweight Python CLI tool designed to solve this exact pr
 
 ## What is `termco-py`?
 
-`termco-py` is a simple yet powerful utility that sends file contents or piped data to your local machine's clipboard using terminal escape sequences (specifically, OSC 52). This means you can copy data from a remote session without needing an active SSH tunnel for clipboard sharing or loading the entire file into an editor. It’s fast, efficient, and works in any terminal that supports OSC 52, such as iTerm2, Alacritty, or WezTerm.
+`termco-py` is a simple yet powerful utility that sends file contents or piped data to your local machine's clipboard using terminal escape sequences (specifically, OSC 52). This means you can copy data from a remote session without needing an active SSH tunnel for clipboard sharing or loading the entire file into an editor. It's fast, efficient, and works in any terminal that supports OSC 52, such as iTerm2, Alacritty, or WezTerm.
 
 ## Getting Started
 
@@ -53,7 +58,7 @@ echo "Hello from the remote server!" | termcopy
 
 ## How It Works Under the Hood
 
-The magic behind `termco-py` is the **OSC 52 escape sequence**. Here’s a quick rundown of the process:
+The magic behind `termco-py` is the **OSC 52 escape sequence**. Here's a quick rundown of the process:
 
 1.  **Read Input:** The tool reads data either from a file specified as an argument or from standard input (`stdin`) if it's part of a pipe.
 2.  **Encode:** The input data is encoded in Base64. This ensures that any special characters or binary data can be safely transmitted.
@@ -64,10 +69,10 @@ This approach avoids the need for complex networking or loading large amounts of
 
 ## Inspiration
 
-This project is a Python alternative to my friend Trevor Bernard’s Rust implementation, which demonstrated the power and elegance of using OSC 52 escape sequences for clipboard operations in terminal environments. You can find his project at [trevorbernard/termcopy](https://github.com/trevorbernard/termcopy).
+This project is a Python alternative to my friend Trevor Bernard's Rust implementation, which demonstrated the power and elegance of using OSC 52 escape sequences for clipboard operations in terminal environments. You can find his project at [trevorbernard/termcopy](https://github.com/trevorbernard/termcopy).
 
 ## Give it a Try!
 
-Next time you're deep in a remote session and need to get data back to your local machine, give `termco-py` a try. It’s a simple tool that can save you a surprising amount of time and hassle.
+Next time you're deep in a remote session and need to get data back to your local machine, give `termco-py` a try. It's a simple tool that can save you a surprising amount of time and hassle.
 
 Check out the project on GitHub at [scaryPonens/termco-py](https://github.com/scaryPonens/termco-py) to see the source code, and feel free to contribute!
