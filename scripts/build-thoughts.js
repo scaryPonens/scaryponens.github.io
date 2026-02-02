@@ -11,6 +11,8 @@ const thoughtsDir = join(projectRoot, 'thoughts')
 const outputDir = join(projectRoot, 'dist', 'blog')
 const publicBlogDir = join(projectRoot, 'public', 'blog')
 
+const SITE_BASE = process.env.SITE_BASE || 'https://scaryponens.github.io'
+
 // Configure marked with highlight.js
 marked.setOptions({
   highlight: function(code, lang) {
@@ -86,6 +88,41 @@ function escapeHtml(text) {
     "'": '&#039;'
   }
   return text.replace(/[&<>"']/g, m => map[m])
+}
+
+function escapeXml(text) {
+  const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }
+  return String(text).replace(/[&<>"']/g, m => map[m])
+}
+
+function generateRss(blogManifest) {
+  const channelTitle = 'Reuben Peter-Paul — Writing'
+  const channelLink = SITE_BASE + '/'
+  const channelDescription = 'Writing'
+  const lastBuildDate = new Date().toUTCString()
+
+  const items = blogManifest.map((entry) => {
+    const link = SITE_BASE + '/blog/' + entry.filename
+    const pubDate = new Date(entry.date).toUTCString()
+    return `  <item>
+    <title>${escapeXml(entry.title)}</title>
+    <link>${escapeXml(link)}</link>
+    <description>${escapeXml(entry.excerpt)}</description>
+    <pubDate>${pubDate}</pubDate>
+    <guid isPermaLink="true">${escapeXml(link)}</guid>
+  </item>`
+  }).join('\n')
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>${escapeXml(channelTitle)}</title>
+    <link>${escapeXml(channelLink)}</link>
+    <description>${escapeXml(channelDescription)}</description>
+    <lastBuildDate>${lastBuildDate}</lastBuildDate>
+${items}
+  </channel>
+</rss>`
 }
 
 // Copy assets directory recursively
@@ -238,6 +275,17 @@ async function buildThoughts() {
     const publicManifestPath = join(publicBlogDir, 'manifest.json')
     await writeFile(publicManifestPath, JSON.stringify(blogManifest, null, 2), 'utf-8')
     console.log(`✓ Generated: public/blog/manifest.json`)
+
+    // Generate RSS feed at site root
+    const rssXml = generateRss(blogManifest)
+    const distFeedPath = join(projectRoot, 'dist', 'feed.xml')
+    const publicFeedPath = join(projectRoot, 'public', 'feed.xml')
+    await mkdir(join(projectRoot, 'dist'), { recursive: true })
+    await writeFile(distFeedPath, rssXml, 'utf-8')
+    console.log(`✓ Generated: feed.xml`)
+    await mkdir(join(projectRoot, 'public'), { recursive: true })
+    await writeFile(publicFeedPath, rssXml, 'utf-8')
+    console.log(`✓ Generated: public/feed.xml`)
 
     console.log(`\nBuild complete! Generated ${markdownFiles.length} HTML file(s) in dist/blog/`)
   } catch (error) {
