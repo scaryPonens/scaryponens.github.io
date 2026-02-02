@@ -4,7 +4,7 @@
 
 ---
 
-*UPDATE 2026-01-31: I've since moved onto used ChatGPT Atlas. I have yet to retry this test with Gemini or Chrome since I wrote this article.*
+*UPDATE 2026-01-31: I've since moved on to use ChatGPT Atlas. I have yet to retry this test with Gemini or Chrome since I wrote this article.*
 
 ---
 
