@@ -362,6 +362,115 @@ body {
   font-weight: 600;
 }
 
+/* Applause Button */
+.applause-container {
+  position: fixed;
+  left: 2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.applause-button {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+  padding: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.applause-button:hover:not(.applause-disabled) {
+  transform: scale(1.05);
+  border-color: var(--color-accent);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.applause-button:active:not(.applause-disabled) {
+  transform: scale(0.95);
+}
+
+.applause-button.applause-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.applause-icon {
+  font-size: 24px;
+  color: var(--color-text);
+  transition: transform 0.2s ease;
+}
+
+.applause-button:hover:not(.applause-disabled) .applause-icon {
+  transform: scale(1.1);
+}
+
+.applause-button.applause-animate .applause-icon {
+  animation: clapAnimation 0.3s ease;
+}
+
+@keyframes clapAnimation {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.2) rotate(-10deg); }
+  75% { transform: scale(1.2) rotate(10deg); }
+}
+
+.applause-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1;
+}
+
+:root.dark .applause-button {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+:root.dark .applause-button:hover:not(.applause-disabled) {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* Comments Section */
+.comments-section {
+  margin-top: 4rem;
+  padding-top: 3rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.comments-section h2 {
+  margin-bottom: 2rem;
+  font-size: 1.5rem;
+  color: var(--color-text);
+}
+
+.giscus-container {
+  margin-top: 1rem;
+}
+
+/* Giscus theme support */
+.giscus,
+.giscus-frame {
+  color-scheme: light dark;
+}
+
+:root.dark .giscus,
+:root.dark .giscus-frame {
+  color-scheme: dark;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .markdown-body {
@@ -375,5 +484,21 @@ body {
   .markdown-body h2 {
     font-size: 1.25em;
     margin-top: 1.25rem;
+  }
+
+  /* Move applause button to top on mobile */
+  .applause-container {
+    position: static;
+    transform: none;
+    flex-direction: row;
+    justify-content: center;
+    margin: 2rem 0;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .comments-section {
+    margin-top: 3rem;
+    padding-top: 2rem;
   }
 }
