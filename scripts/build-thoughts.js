@@ -95,26 +95,44 @@ function escapeXml(text) {
   return String(text).replace(/[&<>"']/g, m => map[m])
 }
 
-function generateRss(blogManifest) {
+// Rewrite relative URLs in HTML to absolute (especially assets) for use in RSS
+function absoluteUrlsInHtml(html) {
+  const blogBase = SITE_BASE + '/blog'
+  return html
+    .replace(/\bsrc="assets\//g, `src="${blogBase}/assets/`)
+    .replace(/\bsrc='assets\//g, `src='${blogBase}/assets/`)
+    .replace(/\bhref="assets\//g, `href="${blogBase}/assets/`)
+    .replace(/\bhref='assets\//g, `href='${blogBase}/assets/`)
+    .replace(/\bsrc="\/blog\/assets\//g, `src="${blogBase}/assets/`)
+    .replace(/\bhref="\/blog\/assets\//g, `href="${blogBase}/assets/`)
+    .replace(/\bhref="\//g, `href="${SITE_BASE}/`)
+    .replace(/\bhref='\//g, `href='${SITE_BASE}/`)
+}
+
+function generateRss(rssItems) {
   const channelTitle = 'Reuben Peter-Paul — Writing'
   const channelLink = SITE_BASE + '/'
   const channelDescription = 'Writing'
   const lastBuildDate = new Date().toUTCString()
 
-  const items = blogManifest.map((entry) => {
+  const items = rssItems.map((entry) => {
     const link = SITE_BASE + '/blog/' + entry.filename
     const pubDate = new Date(entry.date).toUTCString()
+    // Content priority: content (full HTML), then summary/description (excerpt) for readers that don't support content
+    const contentEncoded = entry.contentHtml
+      ? `    <content:encoded><![CDATA[\n${entry.contentHtml}\n]]></content:encoded>\n`
+      : ''
     return `  <item>
     <title>${escapeXml(entry.title)}</title>
     <link>${escapeXml(link)}</link>
-    <description>${escapeXml(entry.excerpt)}</description>
+${contentEncoded}    <description>${escapeXml(entry.excerpt)}</description>
     <pubDate>${pubDate}</pubDate>
     <guid isPermaLink="true">${escapeXml(link)}</guid>
   </item>`
   }).join('\n')
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
   <channel>
     <title>${escapeXml(channelTitle)}</title>
     <link>${escapeXml(channelLink)}</link>
@@ -179,6 +197,7 @@ async function buildThoughts() {
     console.log(`Processing ${markdownFiles.length} markdown file(s)...`)
 
     const blogManifest = []
+    const rssItems = []
 
     // Process each markdown file
     for (const file of markdownFiles) {
@@ -251,19 +270,30 @@ async function buildThoughts() {
       await writeFile(publicOutputPath, html, 'utf-8')
       
       // Add to manifest
+      const entryDate = date || new Date().toISOString().split('T')[0]
       blogManifest.push({
         title,
         slug: slug,
-        date: date || new Date().toISOString().split('T')[0],
+        date: entryDate,
         excerpt,
         filename: outputFileName
+      })
+
+      // Collect full HTML for RSS (content:encoded); use absolute URLs for assets
+      rssItems.push({
+        title,
+        excerpt,
+        date: entryDate,
+        filename: outputFileName,
+        contentHtml: absoluteUrlsInHtml(htmlContent)
       })
       
       console.log(`✓ Generated: ${outputFileName}`)
     }
 
-    // Sort manifest by date (newest first)
+    // Sort manifest and RSS items by date (newest first)
     blogManifest.sort((a, b) => new Date(b.date) - new Date(a.date))
+    rssItems.sort((a, b) => new Date(b.date) - new Date(a.date))
 
     // Write manifest JSON to dist/blog (for production)
     const manifestPath = join(outputDir, 'manifest.json')
@@ -276,8 +306,8 @@ async function buildThoughts() {
     await writeFile(publicManifestPath, JSON.stringify(blogManifest, null, 2), 'utf-8')
     console.log(`✓ Generated: public/blog/manifest.json`)
 
-    // Generate RSS feed at site root
-    const rssXml = generateRss(blogManifest)
+    // Generate RSS feed at site root (full HTML in content:encoded, description as fallback)
+    const rssXml = generateRss(rssItems)
     const distFeedPath = join(projectRoot, 'dist', 'feed.xml')
     const publicFeedPath = join(projectRoot, 'public', 'feed.xml')
     await mkdir(join(projectRoot, 'dist'), { recursive: true })
