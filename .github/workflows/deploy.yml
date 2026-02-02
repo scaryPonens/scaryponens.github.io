@@ -31,6 +31,8 @@ jobs:
         run: npm ci
       
       - name: Build
+        env:
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: npm run build
       
       - name: Upload artifact

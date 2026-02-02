@@ -4,6 +4,10 @@ import { fileURLToPath } from 'url'
 import { marked } from 'marked'
 import hljs from 'highlight.js'
 import matter from 'gray-matter'
+import dotenv from 'dotenv'
+
+// Load environment variables from .env file
+dotenv.config({ quiet: true })
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -48,8 +52,9 @@ function generateHTML(title, content, css, slug, articleUrl) {
   
   // Supabase configuration
   // Get your anon key from: Supabase Dashboard > Project Settings > API > anon/public key
+  // Set via environment variable: SUPABASE_ANON_KEY
   const SUPABASE_URL = 'https://jqjpqhjkulvbrrnbvgeo.supabase.co'
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxanBxaGprdWx2YnJybmJ2Z2VvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwMzQ2MTEsImV4cCI6MjA4NTYxMDYxMX0.Hphz5CR-OdJwf7Xxk8SE2_AEerixpk6EX9hi-VN_hbw' // TODO: Add your Supabase anon/public key here
+  const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || ''
   
   return `<!DOCTYPE html>
 <html lang="en">
