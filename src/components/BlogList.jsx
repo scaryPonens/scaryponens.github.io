@@ -43,8 +43,9 @@ function BlogList() {
           {blogs.map((blog, index) => (
             <a 
               key={index} 
-              href={`/blog/${blog.filename}`}
+              href={blog.external_url || `/blog/${blog.filename}`}
               className="blog-card"
+              {...(blog.external_url && { target: '_blank', rel: 'noopener noreferrer' })}
             >
               <h3 className="blog-title">{blog.title}</h3>
               <span className="blog-date">{formatDate(blog.date)}</span>

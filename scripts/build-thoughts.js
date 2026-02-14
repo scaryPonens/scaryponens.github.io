@@ -3,6 +3,7 @@ import { join, dirname, basename, extname } from 'path'
 import { fileURLToPath } from 'url'
 import { marked } from 'marked'
 import hljs from 'highlight.js'
+import matter from 'gray-matter'
 import dotenv from 'dotenv'
 
 // Load environment variables from .env file
@@ -297,7 +298,7 @@ function generateRss(rssItems) {
   const lastBuildDate = new Date().toUTCString()
 
   const items = rssItems.map((entry) => {
-    const link = SITE_BASE + '/blog/' + entry.filename
+    const link = entry.external_url || (SITE_BASE + '/blog/' + entry.filename)
     const pubDate = new Date(entry.date).toUTCString()
     // Content priority: content (full HTML), then summary/description (excerpt) for readers that don't support content
     const contentEncoded = entry.contentHtml
@@ -383,87 +384,106 @@ async function buildThoughts() {
     // Process each markdown file
     for (const file of markdownFiles) {
       const filePath = join(thoughtsDir, file)
-      const markdown = await readFile(filePath, 'utf-8')
-      
-      // Convert markdown to HTML
-      const htmlContent = marked.parse(markdown)
-      
-      // Extract title from first h1 or use filename
-      const titleMatch = markdown.match(/^#\s+(.+)$/m)
-      let title = titleMatch ? titleMatch[1] : basename(file, '.md')
-      
+      const rawMarkdown = await readFile(filePath, 'utf-8')
+      const { data, content } = matter(rawMarkdown)
+
+      // Normalize date to YYYY-MM-DD
+      const normalizeDate = (d) => {
+        if (!d) return null
+        if (typeof d === 'string') return d.split('T')[0]
+        if (d instanceof Date) return d.toISOString().split('T')[0]
+        return null
+      }
+
+      if (data.external_url) {
+        // External article (e.g. Medium): manifest and RSS only, no HTML
+        const title = data.title || basename(file, '.md')
+        const date = normalizeDate(data.date) || new Date().toISOString().split('T')[0]
+        const excerpt = data.excerpt || ''
+
+        blogManifest.push({
+          title,
+          slug: basename(file, '.md'),
+          date,
+          excerpt,
+          external_url: data.external_url
+        })
+
+        rssItems.push({
+          title,
+          excerpt,
+          date,
+          external_url: data.external_url,
+          contentHtml: null
+        })
+
+        console.log(`✓ External: ${title}`)
+        continue
+      }
+
+      // Regular thought: generate HTML
+      const htmlContent = marked.parse(content)
+
+      // Extract title: frontmatter, else first h1, else filename
+      const titleMatch = content.match(/^#\s+(.+)$/m)
+      let title = data.title || (titleMatch ? titleMatch[1] : basename(file, '.md'))
+
       // Extract date from filename if in format YYYYMMDD- or YYYY-MM-DD-
-      // Support both formats: 20260102-example.md or 2026-01-02-example.md
-      let date = null
+      let date = normalizeDate(data.date)
       let datePrefix = ''
       let slug = basename(file, '.md')
-      
-      // Try YYYYMMDD format first (e.g., 20260102-example-thought.md)
-      const dateMatch1 = file.match(/^(\d{8})-(.+)$/)
-      if (dateMatch1) {
-        const dateStr = dateMatch1[1]
-        date = `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`
-        datePrefix = dateMatch1[1] + '-'
-        slug = dateMatch1[2].replace(/\.md$/, '') // Remove .md extension
-        // Remove date prefix from title if it exists
-        if (title.startsWith(datePrefix)) {
-          title = title.substring(datePrefix.length)
-        }
-      } else {
-        // Try YYYY-MM-DD format (e.g., 2026-01-02-example-thought.md)
-        const dateMatch2 = file.match(/^(\d{4})-(\d{2})-(\d{2})-(.+)$/)
-        if (dateMatch2) {
-          date = `${dateMatch2[1]}-${dateMatch2[2]}-${dateMatch2[3]}`
-          datePrefix = `${dateMatch2[1]}-${dateMatch2[2]}-${dateMatch2[3]}-`
-          slug = dateMatch2[4].replace(/\.md$/, '') // Remove .md extension
-          // Remove date prefix from title if it exists
-          if (title.startsWith(datePrefix)) {
-            title = title.substring(datePrefix.length)
-          }
+
+      if (!date) {
+        const dateMatch1 = file.match(/^(\d{8})-(.+)$/)
+        if (dateMatch1) {
+          const dateStr = dateMatch1[1]
+          date = `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`
+          datePrefix = dateMatch1[1] + '-'
+          slug = dateMatch1[2].replace(/\.md$/, '')
+          if (title.startsWith(datePrefix)) title = title.substring(datePrefix.length)
         } else {
-          // Try legacy YYYY-MM-DD format (without dash after date)
-          const dateMatch3 = file.match(/(\d{4})-(\d{1,2})-(\d{1,2})/)
-          if (dateMatch3) {
-            date = `${dateMatch3[1]}-${dateMatch3[2].padStart(2, '0')}-${dateMatch3[3].padStart(2, '0')}`
+          const dateMatch2 = file.match(/^(\d{4})-(\d{2})-(\d{2})-(.+)$/)
+          if (dateMatch2) {
+            date = `${dateMatch2[1]}-${dateMatch2[2]}-${dateMatch2[3]}`
+            datePrefix = `${dateMatch2[1]}-${dateMatch2[2]}-${dateMatch2[3]}-`
+            slug = dateMatch2[4].replace(/\.md$/, '')
+            if (title.startsWith(datePrefix)) title = title.substring(datePrefix.length)
+          } else {
+            const dateMatch3 = file.match(/(\d{4})-(\d{1,2})-(\d{1,2})/)
+            if (dateMatch3) {
+              date = `${dateMatch3[1]}-${dateMatch3[2].padStart(2, '0')}-${dateMatch3[3].padStart(2, '0')}`
+            }
+            slug = slug.replace(/\.md$/, '')
           }
-          // Ensure slug doesn't have .md extension
-          slug = slug.replace(/\.md$/, '')
         }
       }
-      
-      // Extract excerpt (first paragraph or first 150 chars)
-      const excerptMatch = markdown.match(/^#\s+.+?\n\n(.+?)(?:\n\n|$)/s)
-      const excerpt = excerptMatch 
-        ? excerptMatch[1].replace(/[#*`]/g, '').trim().substring(0, 150) + '...'
-        : markdown.replace(/^#\s+.+?\n\n/, '').substring(0, 150).trim() + '...'
-      
-      // Write HTML file - keep date prefix in filename
+
+      // Excerpt: frontmatter, else first paragraph or first 150 chars from content
+      let excerpt = data.excerpt
+      if (!excerpt) {
+        const excerptMatch = content.match(/^#\s+.+?\n\n(.+?)(?:\n\n|$)/s)
+        excerpt = excerptMatch
+          ? excerptMatch[1].replace(/[#*`]/g, '').trim().substring(0, 150) + '...'
+          : content.replace(/^#\s+.+?\n\n/, '').substring(0, 150).trim() + '...'
+      }
+
       const outputFileName = basename(file, '.md') + '.html'
       const articleUrl = SITE_BASE + '/blog/' + outputFileName
-      
-      // Generate HTML file with slug and article URL
       const html = generateHTML(title, htmlContent, css, slug, articleUrl)
-      
-      // Write to dist/blog/ (for production)
-      const outputPath = join(outputDir, outputFileName)
-      await writeFile(outputPath, html, 'utf-8')
-      
-      // Also write to public/blog/ (for dev server)
+
+      await writeFile(join(outputDir, outputFileName), html, 'utf-8')
       await mkdir(publicBlogDir, { recursive: true })
-      const publicOutputPath = join(publicBlogDir, outputFileName)
-      await writeFile(publicOutputPath, html, 'utf-8')
-      
-      // Add to manifest
+      await writeFile(join(publicBlogDir, outputFileName), html, 'utf-8')
+
       const entryDate = date || new Date().toISOString().split('T')[0]
       blogManifest.push({
         title,
-        slug: slug,
+        slug,
         date: entryDate,
         excerpt,
         filename: outputFileName
       })
 
-      // Collect full HTML for RSS (content:encoded); use absolute URLs for assets
       rssItems.push({
         title,
         excerpt,
@@ -471,7 +491,7 @@ async function buildThoughts() {
         filename: outputFileName,
         contentHtml: absoluteUrlsInHtml(htmlContent)
       })
-      
+
       console.log(`✓ Generated: ${outputFileName}`)
     }
 
