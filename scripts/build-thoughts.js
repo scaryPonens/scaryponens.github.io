@@ -35,6 +35,22 @@ marked.setOptions({
   gfm: true
 })
 
+// Copy favicon.ico to public/
+async function copyFavicon() {
+  const src = join(projectRoot, 'src', 'static', 'favicon.ico')
+  const dest = join(projectRoot, 'public', 'favicon.ico')
+  try {
+    await copyFile(src, dest)
+    console.log('Copied favicon.ico to public/')
+  } catch (err) {
+    if (err.code !== 'ENOENT') {
+      console.warn('Could not copy favicon.ico:', err)
+    }
+  }
+}
+
+await copyFavicon()
+
 // Read blog CSS
 async function getBlogCSS() {
   const cssPath = join(projectRoot, 'src', 'styles', 'blog.css')
