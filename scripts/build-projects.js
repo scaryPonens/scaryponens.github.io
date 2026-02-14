@@ -35,16 +35,22 @@ marked.setOptions({
   gfm: true
 })
 
-// Copy favicon.ico to public/
+
+// Copy favicon.ico to public/ and dist/
 async function copyFavicon() {
   const src = join(projectRoot, 'src', 'static', 'favicon.ico')
-  const dest = join(projectRoot, 'public', 'favicon.ico')
-  try {
-    await copyFile(src, dest)
-    console.log('Copied favicon.ico to public/')
-  } catch (err) {
-    if (err.code !== 'ENOENT') {
-      console.warn('Could not copy favicon.ico:', err)
+  const dests = [
+    join(projectRoot, 'public', 'favicon.ico'),
+    join(projectRoot, 'dist', 'favicon.ico')
+  ]
+  for (const dest of dests) {
+    try {
+      await copyFile(src, dest)
+      console.log(`Copied favicon.ico to ${dest}`)
+    } catch (err) {
+      if (err.code !== 'ENOENT') {
+        console.warn('Could not copy favicon.ico:', err)
+      }
     }
   }
 }
