@@ -1,6 +1,7 @@
 ---
 title: "Unlock Your Terminal's Clipboard: Introducing termco-py"
 tldr: Pipe any file from a remote terminal to your local clipboard with one command. A lightweight Python CLI using OSC 52.
+date_started: 2025-08-17
 ---
 
 # Unlock Your Terminal's Clipboard: Introducing termco-py

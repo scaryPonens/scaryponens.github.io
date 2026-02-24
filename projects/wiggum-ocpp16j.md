@@ -1,6 +1,7 @@
 ---
 title: A Nerd's Poetic Journey into OCPP 1.6j
 tldr: Exploring the "Ralph Wiggum Iterative Approach" using OCPP 1.6j as the canvas, with OpenTelemetry, Jaeger, Tempo, Prometheus, and Grafana for observability.
+date_started: 2026-01-18
 ---
 
 # A Nerd's Poetic Journey into OCPP 1.6j

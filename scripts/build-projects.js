@@ -382,6 +382,11 @@ async function buildProjects() {
         }
       }
 
+      // date_started: frontmatter date_started or started, for ordering (newest first)
+      const rawDate = data.date_started ?? data.started
+      const parsedDate = rawDate ? new Date(rawDate) : null
+      const date_started = (parsedDate && !isNaN(parsedDate.getTime())) ? parsedDate.toISOString() : null
+
       // Write HTML file
       const outputFileName = basename(file, '.md') + '.html'
       const articleUrl = SITE_BASE + '/projects/' + outputFileName
@@ -404,14 +409,20 @@ async function buildProjects() {
         title,
         slug: basename(file, '.md'),
         excerpt,
-        filename: outputFileName
+        filename: outputFileName,
+        date_started
       })
       
       console.log(`✓ Generated: ${outputFileName}`)
     }
 
-    // Sort manifest by title (alphabetical)
-    projectsManifest.sort((a, b) => a.title.localeCompare(b.title))
+    // Sort manifest by date_started descending (newest first); missing date last; subsort by title
+    projectsManifest.sort((a, b) => {
+      const timeA = a.date_started ? new Date(a.date_started).getTime() : 0
+      const timeB = b.date_started ? new Date(b.date_started).getTime() : 0
+      if (timeA !== timeB) return timeB - timeA
+      return a.title.localeCompare(b.title)
+    })
 
     // Write manifest JSON to dist/projects (for production)
     const manifestPath = join(outputDir, 'manifest.json')
