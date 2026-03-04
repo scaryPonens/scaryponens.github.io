@@ -1,8 +1,5 @@
 # From Pretty Graphs to Useful Truth
 
-![Analogy in Action](assets/analogy_diagram.png)
-*The map is not the territory. But a good map still saves your ankles.*
-
 I added two visualization layers to `friendly-rotary-phone`:
 
 1. **Graphviz DOT export** for explicit machine diagrams

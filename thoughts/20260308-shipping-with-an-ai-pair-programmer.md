@@ -1,8 +1,5 @@
 # Shipping with an AI Pair Programmer Who Never Sleeps
 
-![Ok...](assets/imdisappointed.png)
-*Me, whenever the assistant confidently suggests a path that is technically possible and strategically wrong.*
-
 I used an AI assistant heavily while rebuilding `friendly-rotary-phone`.
 
 And after enough cycles, the pattern is clearer:
