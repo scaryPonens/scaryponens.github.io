@@ -1,8 +1,9 @@
 function Contact() {
   const links = [
     { name: 'GitHub', url: 'https://github.com/scaryponens', icon: 'fa-brands fa-github' },
+    { name: 'Medium', url: 'https://medium.com/@reuben.peterpaul', icon: 'fa-brands fa-medium' },
     { name: 'LinkedIn', url: 'https://www.linkedin.com/in/reubenpeterpaul/', icon: 'fa-brands fa-linkedin' },
-    { name: 'Email', url: 'mailto:reuben.peterpaul@protonmail.com', icon: 'fa-solid fa-envelope' },
+    { name: 'Email', url: 'mailto:reuben.peterpaul@pm.me', icon: 'fa-solid fa-envelope' },
   ]
 
   return (
