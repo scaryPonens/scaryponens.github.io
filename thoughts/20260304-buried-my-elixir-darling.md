@@ -49,3 +49,5 @@ Sometimes architecture is about selecting what *not* to fight this week.
 ---
 
 #AI #Engineering #Elixir #Python #DecisionMaking
+
+GitHub repo: https://github.com/scaryPonens/friendly-rotary-phone
