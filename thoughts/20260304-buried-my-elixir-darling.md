@@ -3,6 +3,12 @@
 ![I’m not mad, I’m just disappointed](assets/imnotmad.png)
 *Me, staring at another runtime mismatch with a coffee that had gone cold.*
 
+Before I get into the stack pivot, context: I’ve been building this with Blueshell, my OpenClaw business and thought partner.
+
+We work like this: I set direction, tradeoffs, and taste; Blueshell handles the heavy execution loops—scaffolding code, validating builds, tightening docs, and helping turn implementation notes into publishable thought entries.
+
+Code and writing aren’t separate lanes in this workflow. They’re one loop: ship architecture, extract lessons, ship the story.
+
 I didn’t switch stacks because I stopped believing in elegant systems.
 
 I switched because I wanted to ship one.
