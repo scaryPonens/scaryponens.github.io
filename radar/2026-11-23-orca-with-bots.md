@@ -13,4 +13,4 @@ bots:
     avatar: /assets/bots/sazed-avatar.jpg
 ---
 
-I'm currently using Orca with bots, best set up to date! For work.
+I'm currently using Orca with bots, best set up to date!
