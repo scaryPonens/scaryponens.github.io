@@ -75,4 +75,7 @@ function buildContentPlugin() {
 export default defineConfig({
   plugins: [buildContentPlugin(), react()],
   base: '/',
+  define: {
+    __BUILD_ID__: JSON.stringify(Date.now().toString(36)),
+  },
 })

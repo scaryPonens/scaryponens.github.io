@@ -6,7 +6,7 @@ function Radar() {
   const [copiedSlug, setCopiedSlug] = useState(null)
 
   useEffect(() => {
-    fetch('/radar/manifest.json')
+    fetch(`/radar/manifest.json?v=${__BUILD_ID__}`)
       .then(res => (res.ok ? res.json() : []))
       .then(data => {
         setItems(Array.isArray(data) ? data : [])
@@ -93,6 +93,27 @@ function Radar() {
                     className="radar-note"
                     dangerouslySetInnerHTML={{ __html: item.bodyHtml }}
                   />
+                )}
+
+                {Array.isArray(item.bots) && item.bots.length > 0 && (
+                  <div className="radar-chips">
+                    {item.bots.map((bot) => (
+                      <div key={bot.name} className="radar-chip">
+                        <img
+                          src={bot.avatar}
+                          alt={`${bot.name} bot avatar`}
+                          width={34}
+                          height={34}
+                        />
+                        <div>
+                          <span className="radar-chip-name">{bot.name}</span>
+                          {bot.role && (
+                            <span className="radar-chip-role">{bot.role}</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 )}
 
                 <div className="radar-meta">

@@ -325,6 +325,65 @@
       color: var(--ex-text);
     }
 
+    /* Bot Roster Pair */
+    .roster-head {
+      font-family: 'IBM Plex Mono', ui-monospace, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--ex-faint);
+      margin: 26px 0 10px;
+    }
+    .roster-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .bot-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 14px 16px;
+      background: var(--ex-surface);
+      border: 1px solid var(--ex-border);
+      border-radius: 6px;
+    }
+    .bot-avatar {
+      width: 56px;
+      height: 56px;
+      border-radius: 8px;
+      object-fit: cover;
+      border: 1px solid var(--ex-border);
+      flex-shrink: 0;
+    }
+    .bot-meta {
+      min-width: 0;
+    }
+    .bot-title-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 3px;
+    }
+    .bot-name {
+      font-family: 'Newsreader', Georgia, serif;
+      font-size: 19px;
+      font-weight: 500;
+      color: var(--ex-text);
+    }
+    .bot-scope {
+      font-family: 'IBM Plex Mono', ui-monospace, monospace;
+      font-size: 10.5px;
+      color: var(--ex-faint);
+      white-space: nowrap;
+    }
+    .bot-desc {
+      font-size: 13.5px;
+      line-height: 1.48;
+      color: var(--ex-muted);
+    }
+
     /* Stepper Scrubber */
     .step-strip {
       display: grid;
@@ -542,6 +601,7 @@
     @media (max-width: 680px) {
       .page { padding: 28px 18px 56px; }
       .custody-grid { grid-template-columns: 1fr; }
+      .roster-grid { grid-template-columns: 1fr; }
       .step-strip { grid-template-columns: repeat(2, 1fr); }
       .step-cols { grid-template-columns: 1fr; gap: 10px; }
       .bench-row { grid-template-columns: 1fr; gap: 8px; }
@@ -623,6 +683,30 @@
         <div class="custody-cell">
           <div class="c-head">Waiting on CI / PR</div>
           <div class="c-val" id="c-wait"><strong>CLI alone:</strong> You poll or keep tabs open.<br><strong>With bot:</strong> Event wake on PR check or review.</div>
+        </div>
+      </div>
+
+      <div class="roster-head">Example · Two persistent bots on this machine, one narrow job each</div>
+      <div class="roster-grid">
+        <div class="bot-card">
+          <img class="bot-avatar" src="/assets/bots/breeze-avatar.jpg" alt="Breeze bot avatar" width="56" height="56" />
+          <div class="bot-meta">
+            <div class="bot-title-row">
+              <span class="bot-name">Breeze</span>
+              <span class="bot-scope">GitHub · Obsidian</span>
+            </div>
+            <p class="bot-desc">Personal representative—shapes pitches, coordinates repo worktrees, and manages site updates.</p>
+          </div>
+        </div>
+        <div class="bot-card">
+          <img class="bot-avatar" src="/assets/bots/sazed-avatar.jpg" alt="Sazed bot avatar" width="56" height="56" />
+          <div class="bot-meta">
+            <div class="bot-title-row">
+              <span class="bot-name">Sazed</span>
+              <span class="bot-scope">MyFitnessPal</span>
+            </div>
+            <p class="bot-desc">Nutrition coordinator—logs meals, verifies ingredient macros, and tracks daily targets.</p>
+          </div>
         </div>
       </div>
     </section>
