@@ -8,6 +8,12 @@
   --color-rule: #282828;
   --color-border: #dfd9ce;
   --color-accent: #af3a03;
+  --color-orca-bg: #282828;
+  --color-orca-stroke: #282828;
+  --color-orca-fg: #faf8f4;
+  --color-pi-coral: #d65d0e;
+  --color-pi-blue: #458588;
+  --color-pi-yellow: #d79921;
 
   --font-serif: 'Newsreader', Georgia, 'Times New Roman', serif;
   --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -24,6 +30,12 @@
   --color-rule: #7c6f64;
   --color-border: #504945;
   --color-accent: #fe8019;
+  --color-orca-bg: #1d2021;
+  --color-orca-stroke: #504945;
+  --color-orca-fg: #ebdbb2;
+  --color-pi-coral: #fe8019;
+  --color-pi-blue: #83a598;
+  --color-pi-yellow: #fabd2f;
 }
 
 * {

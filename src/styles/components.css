@@ -190,6 +190,48 @@
   text-decoration-color: var(--color-accent);
 }
 
+.bench-tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 500;
+  color: var(--color-text);
+  vertical-align: -0.05em;
+}
+
+.bench-sep {
+  margin: 0 0.45rem;
+  color: var(--color-text-faint);
+  font-weight: 400;
+}
+
+.tool-icon {
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.orca-badge-bg {
+  fill: var(--color-orca-bg);
+  stroke: var(--color-orca-stroke);
+  stroke-width: 1;
+}
+
+.orca-badge-fg {
+  fill: var(--color-orca-fg);
+}
+
+.pi-coral {
+  fill: var(--color-pi-coral);
+}
+
+.pi-blue {
+  fill: var(--color-pi-blue);
+}
+
+.pi-yellow {
+  fill: var(--color-pi-yellow);
+}
+
 /* 02 / Worth Looking At (Radar) */
 .radar-list {
   display: flex;
