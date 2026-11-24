@@ -2,73 +2,77 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { exec } from 'child_process'
 import { promisify } from 'util'
+import { resolve } from 'path'
 
 const execAsync = promisify(exec)
 
-// Plugin to build markdown files after Vite build and during dev
-function buildThoughtsPlugin() {
-  let manifestGenerated = false
-  
-  const runBuildScript = async () => {
-    if (manifestGenerated) return
-    try {
-      const { stdout, stderr } = await execAsync('node scripts/build-thoughts.js')
-      if (stdout) console.log(stdout)
-      if (stderr) console.error(stderr)
-      manifestGenerated = true
-    } catch (error) {
-      console.error('Error running build-thoughts script:', error.message)
-    }
+const CONTENT_SCRIPTS = [
+  'node scripts/build-thoughts.js',
+  'node scripts/build-projects.js',
+  'node scripts/build-radar.js',
+  'node scripts/build-now.js',
+  'node scripts/build-feed.js'
+]
+
+function buildContentPlugin() {
+  let builtOnce = false
+  let running = null
+
+  const runContentBuild = async () => {
+    if (running) return running
+    running = (async () => {
+      for (const cmd of CONTENT_SCRIPTS) {
+        const { stdout, stderr } = await execAsync(cmd)
+        if (stdout) console.log(stdout.trim())
+        if (stderr) console.error(stderr.trim())
+      }
+      builtOnce = true
+    })().finally(() => {
+      running = null
+    })
+    return running
   }
 
   return {
-    name: 'build-thoughts',
-    async configureServer() {
-      // Generate manifest and HTML files on dev server start
-      // Files will be in public/blog/ and served automatically by Vite
-      // Await to ensure manifest is ready before server starts accepting requests
-      await runBuildScript()
-    },
-    buildEnd: async () => {
-      await runBuildScript()
-    }
-  }
-}
+    name: 'build-content',
+    async configureServer(server) {
+      await runContentBuild()
 
-// Plugin to build project markdown files after Vite build and during dev
-function buildProjectsPlugin() {
-  let manifestGenerated = false
-  
-  const runBuildScript = async () => {
-    if (manifestGenerated) return
-    try {
-      const { stdout, stderr } = await execAsync('node scripts/build-projects.js')
-      if (stdout) console.log(stdout)
-      if (stderr) console.error(stderr)
-      manifestGenerated = true
-    } catch (error) {
-      console.error('Error running build-projects script:', error.message)
-    }
-  }
+      const watchPaths = [
+        resolve('thoughts'),
+        resolve('projects'),
+        resolve('radar'),
+        resolve('now.md')
+      ]
+      server.watcher.add(watchPaths)
 
-  return {
-    name: 'build-projects',
-    async configureServer() {
-      // Generate manifest and HTML files on dev server start
-      // Files will be in public/projects/ and served automatically by Vite
-      // Await to ensure manifest is ready before server starts accepting requests
-      await runBuildScript()
+      const onChange = async (file) => {
+        if (watchPaths.some(p => file === p || file.startsWith(p + '/'))) {
+          try {
+            await runContentBuild()
+            server.ws.send({ type: 'full-reload' })
+          } catch (error) {
+            console.error('Error rebuilding content:', error.message)
+          }
+        }
+      }
+
+      server.watcher.on('change', onChange)
+      server.watcher.on('add', onChange)
+      server.watcher.on('unlink', onChange)
     },
-    buildEnd: async () => {
-      await runBuildScript()
+    async buildStart() {
+      // `npm run build` already runs `npm run build:content` before `vite build`.
+      // Run here only if `vite build` was invoked directly without npm build.
+      if (!builtOnce && process.env.npm_lifecycle_event !== 'build') {
+        await runContentBuild()
+      }
     }
   }
 }
 
 // https://vitejs.dev/config/
-// For GitHub Pages user/organization sites (username.github.io), use base: '/'
-// For project sites, use base: '/repo-name/'
 export default defineConfig({
-  plugins: [buildThoughtsPlugin(), buildProjectsPlugin(), react()],
+  plugins: [buildContentPlugin(), react()],
   base: '/',
 })

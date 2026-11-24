@@ -443,10 +443,87 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
+/* Entry Footer (Blog, Projects, Radar) */
+.entry-footer {
+  margin-top: 2.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--color-border);
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+}
+
+.entry-footer p {
+  margin-bottom: 0;
+}
+
+.entry-footer-sep {
+  margin: 0 0.45rem;
+  opacity: 0.6;
+}
+
+/* Standalone Radar Permalink Page */
+.radar-page-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.radar-page-source {
+  font-size: 0.78rem;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 0.05rem 0.45rem;
+}
+
+.radar-page-title-link {
+  color: var(--color-text) !important;
+}
+
+.radar-page-title-link:hover {
+  color: var(--color-accent) !important;
+}
+
+.radar-ext-icon {
+  font-size: 0.6em;
+  opacity: 0.55;
+  vertical-align: 0.15em;
+}
+
+.radar-page-body {
+  margin-top: 1.25rem;
+  font-size: 1.0625rem;
+}
+
+.radar-page-visit {
+  margin-top: 1.25rem;
+  font-weight: 500;
+}
+
+.radar-page-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 1rem;
+}
+
+.radar-page-tag {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 0.1rem 0.55rem;
+}
+
 /* Comments Section */
 .comments-section {
-  margin-top: 4rem;
-  padding-top: 3rem;
+  margin-top: 2.5rem;
+  padding-top: 2.5rem;
   border-top: 1px solid var(--color-border);
 }
 

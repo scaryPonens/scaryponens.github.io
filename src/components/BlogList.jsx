@@ -8,7 +8,6 @@ function BlogList() {
     fetch('/blog/manifest.json')
       .then(res => res.json())
       .then(data => {
-        // Sort by date descending (newest first)
         const sorted = [...data].sort((a, b) => new Date(b.date) - new Date(a.date))
         setBlogs(sorted)
         setLoading(false)
@@ -20,14 +19,12 @@ function BlogList() {
   }, [])
 
   const formatDate = (dateString) => {
-    // Parse date string as local date to avoid timezone issues
-    // dateString format: "YYYY-MM-DD"
     const [year, month, day] = dateString.split('-').map(Number)
-    const date = new Date(year, month - 1, day) // month is 0-indexed
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
+    const date = new Date(year, month - 1, day)
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
     })
   }
 
@@ -36,18 +33,23 @@ function BlogList() {
   }
 
   return (
-    <section className="blog-section">
+    <section className="blog-section" id="field-notes">
       <div className="section-container">
-        <h2 className="section-title">Writing</h2>
+        <h2 className="section-title">Field Notes</h2>
         <div className="blog-list">
           {blogs.map((blog, index) => (
-            <a 
-              key={index} 
+            <a
+              key={blog.slug || index}
               href={blog.external_url || `/blog/${blog.filename}`}
               className="blog-card"
               {...(blog.external_url && { target: '_blank', rel: 'noopener noreferrer' })}
             >
-              <h3 className="blog-title">{blog.title}</h3>
+              <h3 className="blog-title">
+                {blog.title}
+                {blog.external_url && (
+                  <i className="fa-solid fa-arrow-up-right-from-square external-inline-icon" aria-hidden="true"></i>
+                )}
+              </h3>
               <span className="blog-date">{formatDate(blog.date)}</span>
             </a>
           ))}

@@ -1,6 +1,8 @@
 import { useEffect } from 'react'
 import Header from './components/Header'
 import About from './components/About'
+import Now from './components/Now'
+import Radar from './components/Radar'
 import Projects from './components/Projects'
 import BlogList from './components/BlogList'
 import Contact from './components/Contact'
@@ -12,7 +14,7 @@ function App() {
     // Initialize dark mode on mount
     const stored = localStorage.getItem('darkMode')
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    
+
     if (stored === 'true' || (stored === null && prefersDark)) {
       document.documentElement.classList.add('dark')
     }
@@ -24,6 +26,8 @@ function App() {
       <div className="content">
         <Header />
         <About />
+        <Now />
+        <Radar />
         <BlogList />
         <Projects />
         <Contact />

@@ -8,7 +8,8 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build:content": "node scripts/build-thoughts.js && node scripts/build-projects.js && node scripts/build-radar.js && node scripts/build-now.js && node scripts/build-feed.js",
+    "build": "npm run build:content && vite build",
     "preview": "vite preview"
   },
   "dependencies": {

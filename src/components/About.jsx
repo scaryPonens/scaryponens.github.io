@@ -1,17 +1,11 @@
 function About() {
   return (
-    <section className="about-section">
+    <section className="about-section" aria-label="About">
       <div className="section-container">
-        <h2 className="section-title">About</h2>
         <p>
-          This site is a notebook for software tooling, LLM applications, 
-          and systems work: practical experiments, partial conclusions, and lessons 
-          learned the hard way.
-        </p>
-        <p>
-          I map the space where distributed energy resources become collective actors, 
-          shaping energy markets and powergrids through real-time control, constraint, 
-          and consequence.
+          Working on distributed energy and grid systems alongside agentic software and shaping.
+          This site is a working radar and field notebook—why certain approaches hold up,
+          how I judge what is improving, and links worth sharing outside social media.
         </p>
       </div>
     </section>
