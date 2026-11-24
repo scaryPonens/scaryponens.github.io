@@ -1,5 +1,5 @@
-import { readdir, readFile, mkdir, writeFile, rm } from 'fs/promises'
-import { join, basename, extname } from 'path'
+import { readdir, readFile, mkdir, writeFile, copyFile, rm } from 'fs/promises'
+import { join, resolve, basename, extname, sep } from 'path'
 import { pathToFileURL } from 'url'
 import matter from 'gray-matter'
 import {
@@ -114,6 +114,37 @@ export async function parseThoughts() {
 
     if (draft || archived) {
       entries.push({ file, draft, archived, unlisted })
+      continue
+    }
+
+    if (data.custom_html) {
+      const customHtmlRel = String(data.custom_html).trim()
+      const resolvedThoughtsDir = resolve(thoughtsDir)
+      const customHtmlPath = resolve(resolvedThoughtsDir, customHtmlRel)
+      if (!customHtmlPath.startsWith(resolvedThoughtsDir + sep)) {
+        throw new Error(`custom_html must stay within thoughts/: ${customHtmlRel}`)
+      }
+
+      const title = data.title || basename(file, '.md')
+      const date = normalizeDate(data.date) || new Date().toISOString().split('T')[0]
+      const slug = basename(file, '.md')
+      const excerpt = data.excerpt || ''
+      const filename = basename(customHtmlRel)
+
+      entries.push({
+        file,
+        title,
+        slug,
+        date,
+        excerpt,
+        filename,
+        custom_html: customHtmlPath,
+        external_url: null,
+        draft: false,
+        unlisted,
+        htmlContent: null,
+        rssContentHtml: null
+      })
       continue
     }
 
@@ -244,6 +275,26 @@ export async function buildThoughts() {
           external_url: entry.external_url
         })
         console.log(`✓ External: ${entry.title}`)
+        continue
+      }
+
+      if (entry.custom_html) {
+        await copyFile(entry.custom_html, join(outputDir, entry.filename))
+        await copyFile(entry.custom_html, join(publicBlogDir, entry.filename))
+
+        if (entry.unlisted) {
+          console.log(`⊘ Unlisted custom HTML (copied, omitted from manifest/feed): ${entry.filename}`)
+          continue
+        }
+
+        blogManifest.push({
+          title: entry.title,
+          slug: entry.slug,
+          date: entry.date,
+          excerpt: entry.excerpt,
+          filename: entry.filename
+        })
+        console.log(`✓ Custom HTML: ${entry.filename}`)
         continue
       }
 
