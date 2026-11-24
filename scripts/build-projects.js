@@ -29,8 +29,6 @@ function generateHTML(title, content, css, slug, { unlisted = false } = {}) {
   const GISCUS_CATEGORY_ID = 'DIC_kwDOA3hFgc4C1xNm'
   const GISCUS_MAPPING = 'pathname'
 
-  const SUPABASE_URL = 'https://jqjpqhjkulvbrrnbvgeo.supabase.co'
-  const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || ''
   const robotsMeta = unlisted ? '\n  <meta name="robots" content="noindex">' : ''
 
   return `<!DOCTYPE html>
@@ -52,7 +50,6 @@ function generateHTML(title, content, css, slug, { unlisted = false } = {}) {
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="alternate" type="application/rss+xml" href="/feed.xml" title="RSS">
 ${googleFontsHeadHtml()}
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <style>
 ${css}
   </style>
@@ -61,12 +58,6 @@ ${themeInitScriptHtml()}
 <body>
   <div class="markdown-body" data-article-slug="${escapeHtml(slug)}">
 ${standaloneTopbarHtml('/')}
-    <div class="applause-container">
-      <button id="applause-btn" class="applause-button" aria-label="Clap">
-        <i class="fa-solid fa-hands-clapping applause-icon"></i>
-        <span id="applause-count" class="applause-count">0</span>
-      </button>
-    </div>
 ${content}
 ${entryFooterHtml()}
     <div class="comments-section">
@@ -90,130 +81,6 @@ ${entryFooterHtml()}
       </script>
     </div>
   </div>
-  <!-- Supabase Client -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- Custom Applause Button -->
-  <script>
-    (function() {
-      const SUPABASE_URL = '${SUPABASE_URL}';
-      const SUPABASE_ANON_KEY = '${SUPABASE_ANON_KEY}';
-      const articleSlug = '${escapeHtml(slug)}';
-
-      if (!SUPABASE_ANON_KEY) {
-        console.warn('Supabase anon key not configured. Please add your anon key to the build script.');
-        const applauseBtn = document.getElementById('applause-btn');
-        if (applauseBtn) {
-          applauseBtn.disabled = true;
-          applauseBtn.classList.add('applause-disabled');
-        }
-        return;
-      }
-
-      if (typeof window.supabase === 'undefined') {
-        console.error('Supabase library not loaded');
-        return;
-      }
-
-      const { createClient } = window.supabase;
-      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      const applauseBtn = document.getElementById('applause-btn');
-      const applauseCount = document.getElementById('applause-count');
-      let userClaps = 0;
-      let totalClaps = 0;
-      const MAX_CLAPS_PER_USER = 50;
-
-      async function init() {
-        try {
-          const { data: authData, error: authError } = await supabase.auth.signInAnonymously();
-          if (authError) {
-            console.error('Auth error:', authError);
-            return;
-          }
-
-          if (authData.user) {
-            const { data: userClapData } = await supabase
-              .from('claps')
-              .select('clap_count')
-              .eq('article_slug', articleSlug)
-              .eq('user_id', authData.user.id)
-              .single();
-
-            if (userClapData) {
-              userClaps = userClapData.clap_count || 0;
-            }
-          }
-
-          const { data: totalData, error: totalError } = await supabase
-            .from('claps')
-            .select('clap_count')
-            .eq('article_slug', articleSlug);
-
-          if (!totalError && totalData) {
-            totalClaps = totalData.reduce((sum, row) => sum + (row.clap_count || 0), 0);
-            updateUI();
-          }
-        } catch (error) {
-          console.error('Init error:', error);
-        }
-      }
-
-      async function handleClap() {
-        if (userClaps >= MAX_CLAPS_PER_USER) {
-          alert('Maximum claps reached for this article!');
-          return;
-        }
-
-        try {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (!user) {
-            await supabase.auth.signInAnonymously();
-            const { data: { user: newUser } } = await supabase.auth.getUser();
-            if (!newUser) return;
-          }
-
-          const currentUser = user || (await supabase.auth.getUser()).data.user;
-          if (!currentUser) return;
-
-          const { error } = await supabase
-            .from('claps')
-            .upsert({
-              article_slug: articleSlug,
-              user_id: currentUser.id,
-              clap_count: (userClaps || 0) + 1
-            }, {
-              onConflict: 'article_slug,user_id'
-            });
-
-          if (error) {
-            console.error('Clap error:', error);
-            return;
-          }
-
-          userClaps++;
-          totalClaps++;
-          updateUI();
-
-          applauseBtn.classList.add('applause-animate');
-          setTimeout(() => applauseBtn.classList.remove('applause-animate'), 300);
-        } catch (error) {
-          console.error('Clap handler error:', error);
-        }
-      }
-
-      function updateUI() {
-        applauseCount.textContent = totalClaps || '0';
-        applauseBtn.disabled = userClaps >= MAX_CLAPS_PER_USER;
-        if (userClaps >= MAX_CLAPS_PER_USER) {
-          applauseBtn.classList.add('applause-disabled');
-        } else {
-          applauseBtn.classList.remove('applause-disabled');
-        }
-      }
-
-      applauseBtn.addEventListener('click', handleClap);
-      init();
-    })();
-  </script>
 ${themeToggleScriptHtml()}
 </body>
 </html>`
