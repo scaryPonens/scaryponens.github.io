@@ -1,18 +1,17 @@
 import { useEffect } from 'react'
 import Header from './components/Header'
-import About from './components/About'
-import Projects from './components/Projects'
+import Now from './components/Now'
+import Radar from './components/Radar'
 import BlogList from './components/BlogList'
+import Projects from './components/Projects'
 import Contact from './components/Contact'
-import DarkModeToggle from './components/DarkModeToggle'
 import './styles/components.css'
 
 function App() {
   useEffect(() => {
-    // Initialize dark mode on mount
     const stored = localStorage.getItem('darkMode')
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    
+
     if (stored === 'true' || (stored === null && prefersDark)) {
       document.documentElement.classList.add('dark')
     }
@@ -20,12 +19,14 @@ function App() {
 
   return (
     <div className="app">
-      <DarkModeToggle />
       <div className="content">
         <Header />
-        <About />
-        <BlogList />
-        <Projects />
+        <main>
+          <Now />
+          <Radar />
+          <BlogList />
+          <Projects />
+        </main>
         <Contact />
       </div>
     </div>

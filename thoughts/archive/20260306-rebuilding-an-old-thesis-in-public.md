@@ -1,3 +1,7 @@
+---
+unlisted: true
+---
+
 # Rebuilding an Old Thesis in Public: ETS, State Machines, and a Bubble Man
 
 I’ve been re-implementing core ideas from my master’s thesis inside `friendly-rotary-phone`.

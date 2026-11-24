@@ -1,83 +1,36 @@
-import { readdir, readFile, mkdir, writeFile, copyFile, stat } from 'fs/promises'
-import { join, dirname, basename, extname } from 'path'
-import { fileURLToPath } from 'url'
-import { marked } from 'marked'
-import hljs from 'highlight.js'
+import { readdir, readFile, mkdir, writeFile, rm } from 'fs/promises'
+import { join, basename, extname } from 'path'
+import { pathToFileURL } from 'url'
 import matter from 'gray-matter'
-import dotenv from 'dotenv'
+import {
+  projectRoot,
+  getMarked,
+  escapeHtml,
+  copyFavicon,
+  getBlogCSS,
+  copyAssets,
+  googleFontsHeadHtml,
+  themeInitScriptHtml,
+  standaloneTopbarHtml,
+  themeToggleScriptHtml,
+  entryFooterHtml
+} from './lib/content-utils.js'
 
-// Load environment variables from .env file
-dotenv.config({ quiet: true })
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-const projectRoot = join(__dirname, '..')
 const projectsDir = join(projectRoot, 'projects')
 const outputDir = join(projectRoot, 'dist', 'projects')
 const publicProjectsDir = join(projectRoot, 'public', 'projects')
 
-const SITE_BASE = process.env.SITE_BASE || 'https://scaryponens.github.io'
+const marked = getMarked()
 
-// Configure marked with highlight.js
-marked.setOptions({
-  highlight: function(code, lang) {
-    if (lang && hljs.getLanguage(lang)) {
-      try {
-        return hljs.highlight(code, { language: lang }).value
-      } catch (err) {
-        console.warn(`Error highlighting ${lang}:`, err)
-      }
-    }
-    return hljs.highlightAuto(code).value
-  },
-  langPrefix: 'hljs language-',
-  breaks: true,
-  gfm: true
-})
-
-
-// Copy favicon.ico to public/ and dist/
-async function copyFavicon() {
-  const src = join(projectRoot, 'src', 'static', 'favicon.ico')
-  const dests = [
-    join(projectRoot, 'public', 'favicon.ico'),
-    join(projectRoot, 'dist', 'favicon.ico')
-  ]
-  for (const dest of dests) {
-    try {
-      await copyFile(src, dest)
-      console.log(`Copied favicon.ico to ${dest}`)
-    } catch (err) {
-      if (err.code !== 'ENOENT') {
-        console.warn('Could not copy favicon.ico:', err)
-      }
-    }
-  }
-}
-
-await copyFavicon()
-
-// Read blog CSS (reuse the same styling)
-async function getBlogCSS() {
-  const cssPath = join(projectRoot, 'src', 'styles', 'blog.css')
-  return await readFile(cssPath, 'utf-8')
-}
-
-// Generate HTML template
-function generateHTML(title, content, css, slug, articleUrl) {
-  // Giscus configuration
+function generateHTML(title, content, css, slug, { unlisted = false } = {}) {
   const GISCUS_REPO = 'scaryPonens/scaryponens.github.io'
   const GISCUS_REPO_ID = 'MDEwOlJlcG9zaXRvcnk1ODIxMzc2MQ=='
   const GISCUS_CATEGORY = 'Comments'
   const GISCUS_CATEGORY_ID = 'DIC_kwDOA3hFgc4C1xNm'
-  const GISCUS_MAPPING = 'pathname' // Use pathname mapping
-  
-  // Supabase configuration
-  // Get your anon key from: Supabase Dashboard > Project Settings > API > anon/public key
-  // Set via environment variable: SUPABASE_ANON_KEY
-  const SUPABASE_URL = 'https://jqjpqhjkulvbrrnbvgeo.supabase.co'
-  const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || ''
-  
+  const GISCUS_MAPPING = 'pathname'
+
+  const robotsMeta = unlisted ? '\n  <meta name="robots" content="noindex">' : ''
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -92,36 +45,21 @@ function generateHTML(title, content, css, slug, articleUrl) {
   </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="article:slug" content="${escapeHtml(slug)}">
+  <meta name="article:slug" content="${escapeHtml(slug)}">${robotsMeta}
   <title>${escapeHtml(title)}</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="alternate" type="application/rss+xml" href="/feed.xml" title="RSS">
+${googleFontsHeadHtml()}
   <style>
 ${css}
   </style>
-  <script>
-    // Initialize dark mode on page load
-    (function() {
-      const stored = localStorage.getItem('darkMode');
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      
-      if (stored === 'true' || (stored === null && prefersDark)) {
-        document.documentElement.classList.add('dark');
-      }
-    })();
-  </script>
+${themeInitScriptHtml()}
 </head>
 <body>
   <div class="markdown-body" data-article-slug="${escapeHtml(slug)}">
-    <nav>
-      <a href="/">← Back to home</a>
-    </nav>
-    <div class="applause-container">
-      <button id="applause-btn" class="applause-button" aria-label="Clap">
-        <i class="fa-solid fa-hands-clapping applause-icon"></i>
-        <span id="applause-count" class="applause-count">0</span>
-      </button>
-    </div>
+${standaloneTopbarHtml('/')}
 ${content}
+${entryFooterHtml()}
     <div class="comments-section">
       <h2>Comments</h2>
       <div class="giscus-container"></div>
@@ -143,205 +81,46 @@ ${content}
       </script>
     </div>
   </div>
-  <!-- Supabase Client -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- Custom Applause Button -->
-  <script>
-    (function() {
-      const SUPABASE_URL = '${SUPABASE_URL}';
-      const SUPABASE_ANON_KEY = '${SUPABASE_ANON_KEY}';
-      const articleSlug = '${escapeHtml(slug)}';
-      
-      if (!SUPABASE_ANON_KEY) {
-        console.warn('Supabase anon key not configured. Please add your anon key to the build script.');
-        // Show button but disable it
-        const applauseBtn = document.getElementById('applause-btn');
-        if (applauseBtn) {
-          applauseBtn.disabled = true;
-          applauseBtn.classList.add('applause-disabled');
-        }
-        return;
-      }
-      
-      // Wait for Supabase to load
-      if (typeof window.supabase === 'undefined') {
-        console.error('Supabase library not loaded');
-        return;
-      }
-      
-      const { createClient } = window.supabase;
-      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      const applauseBtn = document.getElementById('applause-btn');
-      const applauseCount = document.getElementById('applause-count');
-      let userClaps = 0;
-      let totalClaps = 0;
-      const MAX_CLAPS_PER_USER = 50;
-      
-      // Initialize: Sign in anonymously and load claps
-      async function init() {
-        try {
-          // Sign in anonymously
-          const { data: authData, error: authError } = await supabase.auth.signInAnonymously();
-          if (authError) {
-            console.error('Auth error:', authError);
-            return;
-          }
-          
-          // Load user's existing claps
-          if (authData.user) {
-            const { data: userClapData } = await supabase
-              .from('claps')
-              .select('clap_count')
-              .eq('article_slug', articleSlug)
-              .eq('user_id', authData.user.id)
-              .single();
-            
-            if (userClapData) {
-              userClaps = userClapData.clap_count || 0;
-            }
-          }
-          
-          // Load total claps for article
-          const { data: totalData, error: totalError } = await supabase
-            .from('claps')
-            .select('clap_count')
-            .eq('article_slug', articleSlug);
-          
-          if (!totalError && totalData) {
-            totalClaps = totalData.reduce((sum, row) => sum + (row.clap_count || 0), 0);
-            updateUI();
-          }
-        } catch (error) {
-          console.error('Init error:', error);
-        }
-      }
-      
-      // Handle clap click
-      async function handleClap() {
-        if (userClaps >= MAX_CLAPS_PER_USER) {
-          alert('Maximum claps reached for this article!');
-          return;
-        }
-        
-        try {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (!user) {
-            await supabase.auth.signInAnonymously();
-            const { data: { user: newUser } } = await supabase.auth.getUser();
-            if (!newUser) return;
-          }
-          
-          const currentUser = user || (await supabase.auth.getUser()).data.user;
-          if (!currentUser) return;
-          
-          // Upsert clap (increment if exists, create if not)
-          const { error } = await supabase
-            .from('claps')
-            .upsert({
-              article_slug: articleSlug,
-              user_id: currentUser.id,
-              clap_count: (userClaps || 0) + 1
-            }, {
-              onConflict: 'article_slug,user_id'
-            });
-          
-          if (error) {
-            console.error('Clap error:', error);
-            return;
-          }
-          
-          userClaps++;
-          totalClaps++;
-          updateUI();
-          
-          // Animate button
-          applauseBtn.classList.add('applause-animate');
-          setTimeout(() => applauseBtn.classList.remove('applause-animate'), 300);
-        } catch (error) {
-          console.error('Clap handler error:', error);
-        }
-      }
-      
-      function updateUI() {
-        applauseCount.textContent = totalClaps || '0';
-        applauseBtn.disabled = userClaps >= MAX_CLAPS_PER_USER;
-        if (userClaps >= MAX_CLAPS_PER_USER) {
-          applauseBtn.classList.add('applause-disabled');
-        } else {
-          applauseBtn.classList.remove('applause-disabled');
-        }
-      }
-      
-      // Event listeners
-      applauseBtn.addEventListener('click', handleClap);
-      
-      // Initialize on load
-      init();
-    })();
-  </script>
+${themeToggleScriptHtml()}
 </body>
 </html>`
 }
 
-function escapeHtml(text) {
-  const map = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#039;'
-  }
-  return text.replace(/[&<>"']/g, m => map[m])
-}
-
-// Copy assets directory recursively
-async function copyAssets(sourceDir, destDir) {
+export async function buildProjects() {
   try {
-    const files = await readdir(sourceDir)
-    await mkdir(destDir, { recursive: true })
-    
-    for (const file of files) {
-      const sourcePath = join(sourceDir, file)
-      const destPath = join(destDir, file)
-      const fileStat = await stat(sourcePath)
-      
-      if (fileStat.isDirectory()) {
-        await copyAssets(sourcePath, destPath)
-      } else {
-        await copyFile(sourcePath, destPath)
-      }
-    }
-  } catch (error) {
-    // Assets directory might not exist, which is fine
-    if (error.code !== 'ENOENT') {
-      console.warn(`Warning: Could not copy assets: ${error.message}`)
-    }
-  }
-}
-
-// Process markdown files
-async function buildProjects() {
-  try {
-    // Ensure output directory exists
+    await copyFavicon()
+    await rm(outputDir, { recursive: true, force: true })
+    await rm(publicProjectsDir, { recursive: true, force: true })
     await mkdir(outputDir, { recursive: true })
+    await mkdir(publicProjectsDir, { recursive: true })
 
-    // Read CSS
     const css = await getBlogCSS()
 
-    // Copy assets directory to output directories
     const assetsSourceDir = join(projectsDir, 'assets')
-    const assetsOutputDir = join(outputDir, 'assets')
-    const assetsPublicDir = join(publicProjectsDir, 'assets')
-    
-    await copyAssets(assetsSourceDir, assetsOutputDir)
-    await copyAssets(assetsSourceDir, assetsPublicDir)
+    await copyAssets(assetsSourceDir, join(outputDir, 'assets'))
+    await copyAssets(assetsSourceDir, join(publicProjectsDir, 'assets'))
 
-    // Read all markdown files from projects directory
-    const files = await readdir(projectsDir)
-    const markdownFiles = files.filter(file => extname(file) === '.md')
+    let dirents = []
+    try {
+      dirents = await readdir(projectsDir, { withFileTypes: true })
+    } catch (error) {
+      if (error.code === 'ENOENT') {
+        await writeFile(join(outputDir, 'manifest.json'), '[]', 'utf-8')
+        await writeFile(join(publicProjectsDir, 'manifest.json'), '[]', 'utf-8')
+        return
+      }
+      throw error
+    }
+
+    const markdownFiles = dirents
+      .filter(entry => entry.isFile() && extname(entry.name) === '.md')
+      .map(entry => entry.name)
+      .sort()
 
     if (markdownFiles.length === 0) {
       console.log('No markdown files found in projects/ directory')
+      await writeFile(join(outputDir, 'manifest.json'), '[]', 'utf-8')
+      await writeFile(join(publicProjectsDir, 'manifest.json'), '[]', 'utf-8')
       return
     }
 
@@ -349,23 +128,25 @@ async function buildProjects() {
 
     const projectsManifest = []
 
-    // Process each markdown file
     for (const file of markdownFiles) {
       const filePath = join(projectsDir, file)
       const rawMarkdown = await readFile(filePath, 'utf-8')
       const { data, content } = matter(rawMarkdown)
 
-      // Convert body (no frontmatter) to HTML
+      if (data.draft || data.archived) {
+        console.log(`⊘ ${data.archived ? 'Archived' : 'Draft'} project skipped: ${file}`)
+        continue
+      }
+
+      const unlisted = Boolean(data.unlisted)
       const htmlContent = marked.parse(content)
 
-      // Title: frontmatter title, else first h1, else filename
       let title = data.title
       if (!title) {
         const titleMatch = content.match(/^#\s+(.+)$/m)
         title = titleMatch ? titleMatch[1] : basename(file, '.md')
       }
 
-      // Excerpt: frontmatter tldr or excerpt, else first paragraph from body
       let excerpt = data.tldr ?? data.excerpt ?? ''
       if (!excerpt) {
         const contentAfterTitle = content.replace(/^#\s+.+?\n+/, '')
@@ -382,41 +163,37 @@ async function buildProjects() {
         }
       }
 
-      // date_started: frontmatter date_started or started, for ordering (newest first)
       const rawDate = data.date_started ?? data.started
       const parsedDate = rawDate ? new Date(rawDate) : null
       const date_started = (parsedDate && !isNaN(parsedDate.getTime())) ? parsedDate.toISOString() : null
+      const year = (parsedDate && !isNaN(parsedDate.getTime())) ? String(parsedDate.getUTCFullYear()) : null
+      const stack = data.stack ? String(data.stack).trim() : null
 
-      // Write HTML file
-      const outputFileName = basename(file, '.md') + '.html'
-      const articleUrl = SITE_BASE + '/projects/' + outputFileName
       const slug = basename(file, '.md')
-      
-      // Generate HTML file with slug and article URL
-      const html = generateHTML(title, htmlContent, css, slug, articleUrl)
-      
-      // Write to dist/projects/ (for production)
-      const outputPath = join(outputDir, outputFileName)
-      await writeFile(outputPath, html, 'utf-8')
-      
-      // Also write to public/projects/ (for dev server)
-      await mkdir(publicProjectsDir, { recursive: true })
-      const publicOutputPath = join(publicProjectsDir, outputFileName)
-      await writeFile(publicOutputPath, html, 'utf-8')
-      
-      // Add to manifest
+      const outputFileName = slug + '.html'
+      const html = generateHTML(title, htmlContent, css, slug, { unlisted })
+
+      await writeFile(join(outputDir, outputFileName), html, 'utf-8')
+      await writeFile(join(publicProjectsDir, outputFileName), html, 'utf-8')
+
+      if (unlisted) {
+        console.log(`⊘ Unlisted project (HTML generated, omitted from manifest): ${outputFileName}`)
+        continue
+      }
+
       projectsManifest.push({
         title,
-        slug: basename(file, '.md'),
+        slug,
         excerpt,
         filename: outputFileName,
-        date_started
+        date_started,
+        year,
+        stack
       })
-      
+
       console.log(`✓ Generated: ${outputFileName}`)
     }
 
-    // Sort manifest by date_started descending (newest first); missing date last; subsort by title
     projectsManifest.sort((a, b) => {
       const timeA = a.date_started ? new Date(a.date_started).getTime() : 0
       const timeB = b.date_started ? new Date(b.date_started).getTime() : 0
@@ -424,28 +201,16 @@ async function buildProjects() {
       return a.title.localeCompare(b.title)
     })
 
-    // Write manifest JSON to dist/projects (for production)
-    const manifestPath = join(outputDir, 'manifest.json')
-    await writeFile(manifestPath, JSON.stringify(projectsManifest, null, 2), 'utf-8')
-    console.log(`✓ Generated: manifest.json`)
-
-    // Also write manifest to public/projects (for dev server)
-    await mkdir(publicProjectsDir, { recursive: true })
-    const publicManifestPath = join(publicProjectsDir, 'manifest.json')
-    await writeFile(publicManifestPath, JSON.stringify(projectsManifest, null, 2), 'utf-8')
-    console.log(`✓ Generated: public/projects/manifest.json`)
-
-    console.log(`\nBuild complete! Generated ${markdownFiles.length} HTML file(s) in dist/projects/`)
+    const manifestJson = JSON.stringify(projectsManifest, null, 2)
+    await writeFile(join(outputDir, 'manifest.json'), manifestJson, 'utf-8')
+    await writeFile(join(publicProjectsDir, 'manifest.json'), manifestJson, 'utf-8')
+    console.log(`✓ Generated projects manifest (${projectsManifest.length} listed)`)
   } catch (error) {
-    if (error.code === 'ENOENT' && error.path === projectsDir) {
-      console.log('projects/ directory does not exist. Creating it...')
-      await mkdir(projectsDir, { recursive: true })
-      console.log('Created projects/ directory. Add markdown files and rebuild.')
-      return
-    }
     console.error('Error building projects:', error)
     process.exit(1)
   }
 }
 
-buildProjects()
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  await buildProjects()
+}

@@ -1,3 +1,7 @@
+---
+unlisted: true
+---
+
 # I Buried My Elixir Darling (And It Was the Right Call)
 
 ![I’m not mad, I’m just disappointed](assets/imnotmad.png)

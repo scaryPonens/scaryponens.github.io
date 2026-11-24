@@ -1,7 +1,8 @@
 ---
-title: "On the role of temporal and spatial representations in light of the ETS formalism (MCS Thesis 2008)"
+title: "On the role of temporal and spatial representations in light of the ETS formalism"
 tldr: Generative AI before it was cool. A formal generative modeling system based on temporal structural processes, with deterministic decoding into spatial representation.
 date_started: 2008-05-01
+stack: "MCS Thesis"
 ---
 
 # On the role of temporal and spatial representations in light of the ETS formalism

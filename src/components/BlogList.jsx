@@ -6,10 +6,11 @@ function BlogList() {
 
   useEffect(() => {
     fetch('/blog/manifest.json')
-      .then(res => res.json())
+      .then(res => (res.ok ? res.json() : []))
       .then(data => {
-        // Sort by date descending (newest first)
-        const sorted = [...data].sort((a, b) => new Date(b.date) - new Date(a.date))
+        const sorted = Array.isArray(data)
+          ? [...data].sort((a, b) => b.date.localeCompare(a.date))
+          : []
         setBlogs(sorted)
         setLoading(false)
       })
@@ -19,41 +20,36 @@ function BlogList() {
       })
   }, [])
 
-  const formatDate = (dateString) => {
-    // Parse date string as local date to avoid timezone issues
-    // dateString format: "YYYY-MM-DD"
-    const [year, month, day] = dateString.split('-').map(Number)
-    const date = new Date(year, month - 1, day) // month is 0-indexed
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
-    })
-  }
-
-  if (loading || blogs.length === 0) {
-    return null
-  }
-
   return (
-    <section className="blog-section">
-      <div className="section-container">
-        <h2 className="section-title">Writing</h2>
-        <div className="blog-list">
-          {blogs.map((blog, index) => (
-            <a 
-              key={index} 
-              href={blog.external_url || `/blog/${blog.filename}`}
-              className="blog-card"
-              {...(blog.external_url && { target: '_blank', rel: 'noopener noreferrer' })}
-            >
-              <h3 className="blog-title">{blog.title}</h3>
-              <span className="blog-date">{formatDate(blog.date)}</span>
-            </a>
-          ))}
-        </div>
-      </div>
-    </section>
+    <>
+      <hr className="section-rule" />
+      <section className="editorial-section" id="field-notes" aria-labelledby="field-notes-heading">
+        <p className="section-kicker">03 / FIELD NOTES</p>
+        <h2 id="field-notes-heading" className="section-heading">Longer arguments &amp; lessons.</h2>
+        {!loading && blogs.length === 0 ? (
+          <p className="empty-state">wow, such empty.</p>
+        ) : (
+          <div className="notes-index">
+            {blogs.map((blog, index) => (
+              <a
+                key={blog.slug || index}
+                href={blog.external_url || `/blog/${blog.filename}`}
+                className="note-row"
+                {...(blog.external_url && { target: '_blank', rel: 'noopener noreferrer' })}
+              >
+                <time className="note-date" dateTime={blog.date}>{blog.date}</time>
+                <span className="note-title">
+                  {blog.title}
+                  {blog.external_url && (
+                    <span className="ext-arrow" aria-hidden="true">↗</span>
+                  )}
+                </span>
+              </a>
+            ))}
+          </div>
+        )}
+      </section>
+    </>
   )
 }
 

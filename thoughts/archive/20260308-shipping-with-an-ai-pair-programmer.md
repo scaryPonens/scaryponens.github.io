@@ -1,3 +1,7 @@
+---
+unlisted: true
+---
+
 # Shipping with an AI Pair Programmer Who Never Sleeps
 
 I used an AI assistant heavily while rebuilding `friendly-rotary-phone`.

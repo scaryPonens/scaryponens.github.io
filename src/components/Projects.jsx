@@ -22,23 +22,31 @@ function Projects() {
   }
 
   return (
-    <section className="projects-section">
-      <div className="section-container">
-        <h2 className="section-title">Projects</h2>
-        <div className="projects-grid">
-          {projects.map((project, index) => (
-            <a 
-              key={index} 
-              href={`/projects/${project.filename}`}
-              className="project-card"
-            >
-              <h3 className="project-title">{project.title}</h3>
-              <p className="project-description">{project.excerpt}</p>
-            </a>
-          ))}
+    <>
+      <hr className="section-rule" />
+      <section className="editorial-section" id="projects" aria-labelledby="projects-heading">
+        <p className="section-kicker">04 / PROJECTS</p>
+        <h2 id="projects-heading" className="section-heading">Built things &amp; experiments.</h2>
+        <div className="projects-list">
+          {projects.map((project, index) => {
+            const metaText = [project.year, project.stack].filter(Boolean).join(' · ')
+            return (
+              <a
+                key={project.slug || index}
+                href={`/projects/${project.filename}`}
+                className="project-row"
+              >
+                <div className="project-header">
+                  <h3 className="project-title">{project.title}</h3>
+                  {metaText && <span className="project-meta">{metaText}</span>}
+                </div>
+                <p className="project-description">{project.excerpt}</p>
+              </a>
+            )
+          })}
         </div>
-      </div>
-    </section>
+      </section>
+    </>
   )
 }
 

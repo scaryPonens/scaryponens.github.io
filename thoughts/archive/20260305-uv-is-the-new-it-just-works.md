@@ -1,3 +1,7 @@
+---
+unlisted: true
+---
+
 # uv Is the New “It Just Works” for Research Projects
 
 ![Look at it](assets/lookatit.png)

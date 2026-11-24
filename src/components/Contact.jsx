@@ -1,30 +1,25 @@
 function Contact() {
-  const links = [
-    { name: 'GitHub', url: 'https://github.com/scaryponens', icon: 'fa-brands fa-github' },
-    { name: 'LinkedIn', url: 'https://www.linkedin.com/in/reubenpeterpaul/', icon: 'fa-brands fa-linkedin' },
-    { name: 'Email', url: 'mailto:reuben.peterpaul@protonmail.com', icon: 'fa-solid fa-envelope' },
-  ]
-
   return (
-    <section className="links-section">
-      <div className="section-container">
-        <h2 className="section-title">Links</h2>
-        <div className="links-list">
-          {links.map((link, index) => (
-            <a
-              key={index}
-              href={link.url}
-              className="link-item"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <i className={link.icon}></i>
-              <span>{link.name}</span>
-            </a>
-          ))}
+    <>
+      <hr className="section-rule" />
+      <footer className="site-footer" id="links">
+        <p className="footer-prompt">
+          Have a note or counterpoint? Reply on{' '}
+          <a href="https://www.linkedin.com/in/reubenpeterpaul/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+          {' '}or by{' '}
+          <a href="mailto:reuben.peterpaul@protonmail.com">email</a>.
+        </p>
+        <div className="footer-links">
+          <a href="/feed.xml">RSS</a>
+          <span className="footer-sep" aria-hidden="true">·</span>
+          <a href="https://github.com/scaryponens" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <span className="footer-sep" aria-hidden="true">·</span>
+          <a href="https://www.linkedin.com/in/reubenpeterpaul/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+          <span className="footer-sep" aria-hidden="true">·</span>
+          <a href="mailto:reuben.peterpaul@protonmail.com">Email</a>
         </div>
-      </div>
-    </section>
+      </footer>
+    </>
   )
 }
 
