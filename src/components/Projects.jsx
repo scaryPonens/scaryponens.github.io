@@ -5,7 +5,7 @@ function Projects() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/projects/manifest.json')
+    fetch(`/projects/manifest.json?v=${__BUILD_ID__}`)
       .then(res => res.json())
       .then(data => {
         setProjects(data)

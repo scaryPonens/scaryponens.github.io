@@ -4,7 +4,7 @@ function Now() {
   const [nowData, setNowData] = useState(null)
 
   useEffect(() => {
-    fetch('/now.json')
+    fetch(`/now.json?v=${__BUILD_ID__}`)
       .then(res => (res.ok ? res.json() : null))
       .then(data => {
         if (data && data.bodyHtml) {

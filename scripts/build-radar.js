@@ -44,6 +44,18 @@ function normalizeTags(tags) {
   return []
 }
 
+function normalizeBots(bots) {
+  if (!Array.isArray(bots)) return []
+  return bots
+    .filter(b => b && typeof b === 'object' && b.name && b.avatar)
+    .map(b => ({
+      name: String(b.name).trim(),
+      role: b.role ? String(b.role).trim() : '',
+      avatar: String(b.avatar).trim()
+    }))
+    .filter(b => b.name && b.avatar)
+}
+
 function deriveDateAndSlug(file, data) {
   const base = basename(file, '.md')
   let date = normalizeDate(data.date)
@@ -97,6 +109,17 @@ function generateRadarPageHTML(item, css) {
     ? `<p class="radar-page-visit"><a href="${escapeHtml(item.url)}"${linkAttrs}>${visitLabel}<span class="ext-arrow" aria-hidden="true">${linkArrow}</span></a></p>`
     : ''
 
+  const botsMarkup = Array.isArray(item.bots) && item.bots.length > 0
+    ? `      <div class="radar-chips">
+${item.bots.map(bot => `        <div class="radar-chip">
+          <img src="${escapeHtml(bot.avatar)}" alt="${escapeHtml(bot.name)} bot avatar" width="34" height="34" />
+          <div>
+            <span class="radar-chip-name">${escapeHtml(bot.name)}</span>
+${bot.role ? `            <span class="radar-chip-role">${escapeHtml(bot.role)}</span>\n` : ''}          </div>
+        </div>`).join('\n')}
+      </div>\n`
+    : ''
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -142,7 +165,7 @@ ${standaloneTopbarHtml('/#' + item.anchor)}
       <div class="radar-page-body">
 ${item.bodyHtml}
       </div>
-      ${visitLinkMarkup}
+${botsMarkup}      ${visitLinkMarkup}
     </article>
 ${entryFooterHtml()}
   </main>
@@ -185,6 +208,7 @@ export async function parseRadar() {
     const url = data.url ? String(data.url).trim() : null
     const source = data.source ? String(data.source).trim() : inferSource(url)
     const tags = normalizeTags(data.tags)
+    const bots = normalizeBots(data.bots)
     const bodyHtml = content.trim() ? marked.parse(content.trim()) : ''
     const excerpt = stripHtml(bodyHtml)
 
@@ -198,6 +222,7 @@ export async function parseRadar() {
       url,
       source,
       tags,
+      bots,
       bodyHtml,
       excerpt,
       permalink: `/radar/${slug}.html`
@@ -244,6 +269,7 @@ export async function buildRadar() {
         url: item.url,
         source: item.source,
         tags: item.tags,
+        ...(item.bots.length > 0 && { bots: item.bots }),
         bodyHtml: item.bodyHtml,
         excerpt: item.excerpt,
         permalink: item.permalink

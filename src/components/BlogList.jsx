@@ -5,7 +5,7 @@ function BlogList() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/blog/manifest.json')
+    fetch(`/blog/manifest.json?v=${__BUILD_ID__}`)
       .then(res => (res.ok ? res.json() : []))
       .then(data => {
         const sorted = Array.isArray(data)
