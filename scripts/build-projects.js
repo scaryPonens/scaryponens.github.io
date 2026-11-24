@@ -100,9 +100,9 @@ export async function buildProjects() {
     await copyAssets(assetsSourceDir, join(outputDir, 'assets'))
     await copyAssets(assetsSourceDir, join(publicProjectsDir, 'assets'))
 
-    let files = []
+    let dirents = []
     try {
-      files = await readdir(projectsDir)
+      dirents = await readdir(projectsDir, { withFileTypes: true })
     } catch (error) {
       if (error.code === 'ENOENT') {
         await writeFile(join(outputDir, 'manifest.json'), '[]', 'utf-8')
@@ -112,7 +112,10 @@ export async function buildProjects() {
       throw error
     }
 
-    const markdownFiles = files.filter(file => extname(file) === '.md').sort()
+    const markdownFiles = dirents
+      .filter(entry => entry.isFile() && extname(entry.name) === '.md')
+      .map(entry => entry.name)
+      .sort()
 
     if (markdownFiles.length === 0) {
       console.log('No markdown files found in projects/ directory')
@@ -130,8 +133,8 @@ export async function buildProjects() {
       const rawMarkdown = await readFile(filePath, 'utf-8')
       const { data, content } = matter(rawMarkdown)
 
-      if (data.draft) {
-        console.log(`⊘ Draft project skipped: ${file}`)
+      if (data.draft || data.archived) {
+        console.log(`⊘ ${data.archived ? 'Archived' : 'Draft'} project skipped: ${file}`)
         continue
       }
 

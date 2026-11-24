@@ -50,9 +50,10 @@ Building generates:
 - A standalone permalink page at `/radar/<slug>.html` (with OpenGraph metadata for sharing)
 - An entry in `/feed.xml`
 
-## Frontmatter flags for Field Notes & Projects
+## Frontmatter flags & archiving for Field Notes & Projects
 
-- `draft: true` — skipped completely (no HTML, no manifest, no RSS).
+- `draft: true` or `archived: true` — skipped completely (no HTML, no manifest, no RSS).
+- `thoughts/archive/` & `projects/archive/` — subdirectories are ignored by the build scripts so archived entries and assets stay in git history without being emitted to `public/` or `dist/`.
 - `unlisted: true` — HTML page is still generated (with `noindex`) so existing direct links do not 404, but the entry is omitted from the home page list and `/feed.xml`.
 - `external_url` (`thoughts/*.md`) — listed in the Field Notes manifest and RSS feed without generating a local HTML article page.
 

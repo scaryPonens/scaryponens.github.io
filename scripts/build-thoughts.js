@@ -89,15 +89,18 @@ ${themeToggleScriptHtml()}
 }
 
 export async function parseThoughts() {
-  let files = []
+  let dirents = []
   try {
-    files = await readdir(thoughtsDir)
+    dirents = await readdir(thoughtsDir, { withFileTypes: true })
   } catch (error) {
     if (error.code === 'ENOENT') return []
     throw error
   }
 
-  const markdownFiles = files.filter(file => extname(file) === '.md').sort()
+  const markdownFiles = dirents
+    .filter(entry => entry.isFile() && extname(entry.name) === '.md')
+    .map(entry => entry.name)
+    .sort()
   const entries = []
 
   for (const file of markdownFiles) {
@@ -106,10 +109,11 @@ export async function parseThoughts() {
     const { data, content } = matter(rawMarkdown)
 
     const draft = Boolean(data.draft)
+    const archived = Boolean(data.archived)
     const unlisted = Boolean(data.unlisted)
 
-    if (draft) {
-      entries.push({ file, draft: true, unlisted })
+    if (draft || archived) {
+      entries.push({ file, draft, archived, unlisted })
       continue
     }
 
@@ -222,8 +226,8 @@ export async function buildThoughts() {
     const blogManifest = []
 
     for (const entry of entries) {
-      if (entry.draft) {
-        console.log(`⊘ Draft skipped: ${entry.file}`)
+      if (entry.draft || entry.archived) {
+        console.log(`⊘ ${entry.archived ? 'Archived' : 'Draft'} skipped: ${entry.file}`)
         continue
       }
 

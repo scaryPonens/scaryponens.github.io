@@ -397,6 +397,14 @@
   color: var(--color-accent);
 }
 
+.empty-state {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--color-text-faint);
+  padding: 0.35rem 0;
+  margin: 0;
+}
+
 /* 04 / Projects */
 .projects-list {
   display: flex;

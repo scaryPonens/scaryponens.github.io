@@ -60,7 +60,7 @@ export async function buildFeed() {
     const feedItems = []
 
     for (const entry of thoughts) {
-      if (entry.draft || entry.unlisted) continue
+      if (entry.draft || entry.archived || entry.unlisted) continue
       const link = entry.external_url || `${SITE_BASE}/blog/${entry.filename}`
       feedItems.push({
         type: 'field-note',
