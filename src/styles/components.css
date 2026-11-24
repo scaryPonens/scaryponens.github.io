@@ -208,28 +208,7 @@
 .tool-icon {
   display: inline-block;
   flex-shrink: 0;
-}
-
-.orca-badge-bg {
-  fill: var(--color-orca-bg);
-  stroke: var(--color-orca-stroke);
-  stroke-width: 1;
-}
-
-.orca-badge-fg {
-  fill: var(--color-orca-fg);
-}
-
-.pi-coral {
-  fill: var(--color-pi-coral);
-}
-
-.pi-blue {
-  fill: var(--color-pi-blue);
-}
-
-.pi-yellow {
-  fill: var(--color-pi-yellow);
+  color: currentColor;
 }
 
 /* 02 / Worth Looking At (Radar) */
