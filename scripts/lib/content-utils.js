@@ -153,13 +153,68 @@ export async function copyAssets(sourceDir, destDir) {
   }
 }
 
+export function googleFontsHeadHtml() {
+  return `  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">`
+}
+
+export function themeInitScriptHtml() {
+  return `  <script>
+    (function() {
+      var stored = localStorage.getItem('darkMode');
+      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (stored === 'true' || (stored === null && prefersDark)) {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+  </script>`
+}
+
+export function standaloneTopbarHtml(backHref = '/') {
+  return `    <nav class="standalone-topbar" aria-label="Site navigation">
+      <a href="${escapeHtml(backHref)}" class="standalone-back">← Reuben Peter-Paul</a>
+      <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Toggle color theme">
+        <span aria-hidden="true">◐</span>
+        <span>Theme</span>
+      </button>
+    </nav>`
+}
+
+export function themeToggleScriptHtml() {
+  return `  <script>
+    (function() {
+      var btn = document.getElementById('theme-toggle');
+      if (!btn) return;
+      function syncLabel() {
+        var isDark = document.documentElement.classList.contains('dark');
+        btn.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+        btn.setAttribute('title', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+      }
+      syncLabel();
+      btn.addEventListener('click', function() {
+        var isDark = document.documentElement.classList.toggle('dark');
+        localStorage.setItem('darkMode', isDark ? 'true' : 'false');
+        syncLabel();
+      });
+    })();
+  </script>`
+}
+
 export function entryFooterHtml() {
   return `    <footer class="entry-footer">
       <p>
-        Reply on <a href="https://www.linkedin.com/in/reubenpeterpaul/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+        Have a note or counterpoint? Reply on <a href="https://www.linkedin.com/in/reubenpeterpaul/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
         or by <a href="mailto:reuben.peterpaul@protonmail.com">email</a>.
-        <span class="entry-footer-sep">·</span>
-        <a href="/feed.xml">RSS</a>
       </p>
+      <div class="entry-footer-links">
+        <a href="/feed.xml">RSS</a>
+        <span class="entry-footer-sep" aria-hidden="true">·</span>
+        <a href="https://github.com/scaryponens" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <span class="entry-footer-sep" aria-hidden="true">·</span>
+        <a href="https://www.linkedin.com/in/reubenpeterpaul/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+        <span class="entry-footer-sep" aria-hidden="true">·</span>
+        <a href="mailto:reuben.peterpaul@protonmail.com">Email</a>
+      </div>
     </footer>`
 }

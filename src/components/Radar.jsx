@@ -29,16 +29,6 @@ function Radar() {
     }
   }, [loading, items])
 
-  const formatDate = (dateString) => {
-    const [year, month, day] = dateString.split('-').map(Number)
-    const date = new Date(year, month - 1, day)
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    })
-  }
-
   const handleCopyLink = async (item) => {
     const shareUrl = `${window.location.origin}${item.permalink}`
     try {
@@ -69,15 +59,11 @@ function Radar() {
   }
 
   return (
-    <section className="radar-section" id="worth-looking-at">
-      <div className="section-container">
-        <div className="section-header-row">
-          <h2 className="section-title">Worth Looking At</h2>
-          <a href="/feed.xml" className="section-rss-link" title="Subscribe via RSS">
-            <i className="fa-solid fa-rss" aria-hidden="true"></i>
-            <span>RSS</span>
-          </a>
-        </div>
+    <>
+      <hr className="section-rule" />
+      <section className="editorial-section" id="worth-looking-at" aria-labelledby="radar-heading">
+        <p className="section-kicker">02 / WORTH LOOKING AT</p>
+        <h2 id="radar-heading" className="section-heading">Curated radar &amp; short whys.</h2>
         <div className="radar-list">
           {items.map((item) => {
             const isCopied = copiedSlug === item.slug
@@ -91,8 +77,8 @@ function Radar() {
                       rel="noopener noreferrer"
                       className="radar-title"
                     >
-                      <span>{item.title}</span>
-                      <i className="fa-solid fa-arrow-up-right-from-square radar-external-icon" aria-hidden="true"></i>
+                      {item.title}
+                      <span className="ext-arrow" aria-hidden="true">↗</span>
                     </a>
                   ) : (
                     <h3 className="radar-title-plain">{item.title}</h3>
@@ -111,52 +97,35 @@ function Radar() {
 
                 <div className="radar-meta">
                   <div className="radar-meta-left">
-                    <time className="radar-date" dateTime={item.date}>
-                      {formatDate(item.date)}
-                    </time>
-                    {item.tags && item.tags.length > 0 && (
-                      <div className="radar-tags">
-                        {item.tags.map((tag) => (
-                          <span key={tag} className="radar-tag">#{tag}</span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <div className="radar-actions">
-                    <a
-                      href={`#${item.anchor}`}
-                      className="radar-action-link"
-                      title="Section anchor"
-                      aria-label={`Anchor link for ${item.title}`}
-                    >
-                      #
-                    </a>
                     <a
                       href={item.permalink}
-                      className="radar-action-link"
-                      title="Open standalone permalink page"
-                      aria-label={`Permalink page for ${item.title}`}
+                      className="radar-date-link"
+                      title="Permalink"
                     >
-                      <i className="fa-solid fa-link" aria-hidden="true"></i>
+                      <time dateTime={item.date}>{item.date}</time>
                     </a>
-                    <button
-                      type="button"
-                      className={`radar-copy-btn${isCopied ? ' copied' : ''}`}
-                      onClick={() => handleCopyLink(item)}
-                      title="Copy shareable link"
-                      aria-label={`Copy shareable link for ${item.title}`}
-                    >
-                      <i className={isCopied ? 'fa-solid fa-check' : 'fa-regular fa-copy'} aria-hidden="true"></i>
-                      <span>{isCopied ? 'Copied' : 'Copy'}</span>
-                    </button>
+                    {item.tags && item.tags.length > 0 && (
+                      <>
+                        <span className="radar-meta-sep" aria-hidden="true">·</span>
+                        <span className="radar-tags-inline">{item.tags.join(', ')}</span>
+                      </>
+                    )}
                   </div>
+                  <button
+                    type="button"
+                    className={`radar-copy-btn${isCopied ? ' copied' : ''}`}
+                    onClick={() => handleCopyLink(item)}
+                    aria-label={`Copy shareable link for ${item.title}`}
+                  >
+                    {isCopied ? 'Copied' : 'Copy link'}
+                  </button>
                 </div>
               </article>
             )
           })}
         </div>
-      </div>
-    </section>
+      </section>
+    </>
   )
 }
 

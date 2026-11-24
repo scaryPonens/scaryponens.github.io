@@ -1,7 +1,8 @@
 ---
-title: "ocpp1.6j-basics — OCPP 1.6j with OpenTelemetry"
+title: "ocpp1.6j-basics"
 tldr: OCPP 1.6j charging-point handshake instrumented end-to-end with OpenTelemetry, Jaeger, Tempo, Prometheus, and Grafana.
 date_started: 2026-01-18
+stack: "OCPP / OpenTelemetry"
 ---
 
 # ocpp1.6j-basics — OCPP 1.6j with OpenTelemetry

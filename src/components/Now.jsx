@@ -20,23 +20,22 @@ function Now() {
     return null
   }
 
+  const kicker = nowData.updated
+    ? `01 / NOW — UPDATED ${nowData.updated.toUpperCase()}`
+    : '01 / NOW'
+
   return (
-    <section className="now-section" aria-labelledby="now-heading">
-      <div className="section-container">
-        <div className="now-box">
-          <div className="now-header">
-            <h2 id="now-heading" className="now-title">{nowData.title || 'Now'}</h2>
-            {nowData.updated && (
-              <span className="now-updated">Updated {nowData.updated}</span>
-            )}
-          </div>
-          <div
-            className="now-body"
-            dangerouslySetInnerHTML={{ __html: nowData.bodyHtml }}
-          />
-        </div>
-      </div>
-    </section>
+    <>
+      <hr className="section-rule" />
+      <section className="editorial-section" id="now" aria-labelledby="now-heading">
+        <p className="section-kicker">{kicker}</p>
+        <h2 id="now-heading" className="section-heading">What is on the bench.</h2>
+        <div
+          className="now-body"
+          dangerouslySetInnerHTML={{ __html: nowData.bodyHtml }}
+        />
+      </section>
+    </>
   )
 }
 

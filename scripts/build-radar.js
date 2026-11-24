@@ -8,10 +8,13 @@ import {
   getMarked,
   escapeHtml,
   normalizeDate,
-  formatDisplayDate,
   stripHtml,
   copyFavicon,
   getBlogCSS,
+  googleFontsHeadHtml,
+  themeInitScriptHtml,
+  standaloneTopbarHtml,
+  themeToggleScriptHtml,
   entryFooterHtml
 } from './lib/content-utils.js'
 
@@ -67,22 +70,24 @@ function deriveDateAndSlug(file, data) {
 function generateRadarPageHTML(item, css) {
   const canonicalUrl = `${SITE_BASE}${item.permalink}`
   const description = item.excerpt || item.title
-  const formattedDate = formatDisplayDate(item.date)
 
   const titleMarkup = item.url
-    ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer" class="radar-page-title-link">${escapeHtml(item.title)} <i class="fa-solid fa-arrow-up-right-from-square radar-ext-icon" aria-hidden="true"></i></a>`
+    ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer" class="radar-page-title-link">${escapeHtml(item.title)}<span class="ext-arrow" aria-hidden="true">↗</span></a>`
     : escapeHtml(item.title)
 
-  const sourceBadge = item.source
-    ? `<span class="radar-page-source">${escapeHtml(item.source)}</span>`
-    : ''
-
-  const tagsMarkup = item.tags.length > 0
-    ? `<div class="radar-page-tags">${item.tags.map(t => `<span class="radar-page-tag">#${escapeHtml(t)}</span>`).join('')}</div>`
-    : ''
+  const metaParts = [
+    `<time datetime="${escapeHtml(item.date)}">${escapeHtml(item.date)}</time>`
+  ]
+  if (item.source) {
+    metaParts.push(`<span>${escapeHtml(item.source)}</span>`)
+  }
+  if (item.tags.length > 0) {
+    metaParts.push(`<span>${escapeHtml(item.tags.join(', '))}</span>`)
+  }
+  const metaMarkup = metaParts.join('<span class="radar-page-sep" aria-hidden="true">·</span>')
 
   const visitLinkMarkup = item.url
-    ? `<p class="radar-page-visit"><a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">Open on ${escapeHtml(item.source || item.url)} <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a></p>`
+    ? `<p class="radar-page-visit"><a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">Open on ${escapeHtml(item.source || item.url)}<span class="ext-arrow" aria-hidden="true">↗</span></a></p>`
     : ''
 
   return `<!DOCTYPE html>
@@ -112,39 +117,29 @@ function generateRadarPageHTML(item, css) {
   <meta name="twitter:description" content="${escapeHtml(description)}">
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="alternate" type="application/rss+xml" href="/feed.xml" title="RSS">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+${googleFontsHeadHtml()}
   <style>
 ${css}
   </style>
-  <script>
-    (function() {
-      const stored = localStorage.getItem('darkMode');
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if (stored === 'true' || (stored === null && prefersDark)) {
-        document.documentElement.classList.add('dark');
-      }
-    })();
-  </script>
+${themeInitScriptHtml()}
 </head>
 <body>
   <main class="markdown-body radar-page">
-    <nav>
-      <a href="/#${escapeHtml(item.anchor)}">← Back to Worth Looking At</a>
-    </nav>
+${standaloneTopbarHtml('/#' + item.anchor)}
     <article class="radar-page-entry">
-      <div class="radar-page-meta">
-        <time datetime="${escapeHtml(item.date)}">${escapeHtml(formattedDate)}</time>
-        ${sourceBadge}
-      </div>
+      <p class="radar-page-kicker">WORTH LOOKING AT</p>
       <h1>${titleMarkup}</h1>
+      <div class="radar-page-meta">
+        ${metaMarkup}
+      </div>
       <div class="radar-page-body">
 ${item.bodyHtml}
       </div>
       ${visitLinkMarkup}
-      ${tagsMarkup}
     </article>
 ${entryFooterHtml()}
   </main>
+${themeToggleScriptHtml()}
 </body>
 </html>`
 }

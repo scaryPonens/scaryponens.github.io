@@ -8,7 +8,7 @@ function BlogList() {
     fetch('/blog/manifest.json')
       .then(res => res.json())
       .then(data => {
-        const sorted = [...data].sort((a, b) => new Date(b.date) - new Date(a.date))
+        const sorted = [...data].sort((a, b) => b.date.localeCompare(a.date))
         setBlogs(sorted)
         setLoading(false)
       })
@@ -18,44 +18,36 @@ function BlogList() {
       })
   }, [])
 
-  const formatDate = (dateString) => {
-    const [year, month, day] = dateString.split('-').map(Number)
-    const date = new Date(year, month - 1, day)
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    })
-  }
-
   if (loading || blogs.length === 0) {
     return null
   }
 
   return (
-    <section className="blog-section" id="field-notes">
-      <div className="section-container">
-        <h2 className="section-title">Field Notes</h2>
-        <div className="blog-list">
+    <>
+      <hr className="section-rule" />
+      <section className="editorial-section" id="field-notes" aria-labelledby="field-notes-heading">
+        <p className="section-kicker">03 / FIELD NOTES</p>
+        <h2 id="field-notes-heading" className="section-heading">Longer arguments &amp; lessons.</h2>
+        <div className="notes-index">
           {blogs.map((blog, index) => (
             <a
               key={blog.slug || index}
               href={blog.external_url || `/blog/${blog.filename}`}
-              className="blog-card"
+              className="note-row"
               {...(blog.external_url && { target: '_blank', rel: 'noopener noreferrer' })}
             >
-              <h3 className="blog-title">
+              <time className="note-date" dateTime={blog.date}>{blog.date}</time>
+              <span className="note-title">
                 {blog.title}
                 {blog.external_url && (
-                  <i className="fa-solid fa-arrow-up-right-from-square external-inline-icon" aria-hidden="true"></i>
+                  <span className="ext-arrow" aria-hidden="true">↗</span>
                 )}
-              </h3>
-              <span className="blog-date">{formatDate(blog.date)}</span>
+              </span>
             </a>
           ))}
         </div>
-      </div>
-    </section>
+      </section>
+    </>
   )
 }
 

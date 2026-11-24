@@ -4,7 +4,6 @@ import { pathToFileURL } from 'url'
 import matter from 'gray-matter'
 import {
   projectRoot,
-  SITE_BASE,
   getMarked,
   escapeHtml,
   normalizeDate,
@@ -12,6 +11,10 @@ import {
   copyFavicon,
   getBlogCSS,
   copyAssets,
+  googleFontsHeadHtml,
+  themeInitScriptHtml,
+  standaloneTopbarHtml,
+  themeToggleScriptHtml,
   entryFooterHtml
 } from './lib/content-utils.js'
 
@@ -50,25 +53,16 @@ function generateHTML(title, content, css, slug, { unlisted = false } = {}) {
   <title>${escapeHtml(title)}</title>
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="alternate" type="application/rss+xml" href="/feed.xml" title="RSS">
+${googleFontsHeadHtml()}
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <style>
 ${css}
   </style>
-  <script>
-    (function() {
-      const stored = localStorage.getItem('darkMode');
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if (stored === 'true' || (stored === null && prefersDark)) {
-        document.documentElement.classList.add('dark');
-      }
-    })();
-  </script>
+${themeInitScriptHtml()}
 </head>
 <body>
   <div class="markdown-body" data-article-slug="${escapeHtml(slug)}">
-    <nav>
-      <a href="/">← Back to home</a>
-    </nav>
+${standaloneTopbarHtml('/')}
     <div class="applause-container">
       <button id="applause-btn" class="applause-button" aria-label="Clap">
         <i class="fa-solid fa-hands-clapping applause-icon"></i>
@@ -222,6 +216,7 @@ ${entryFooterHtml()}
       init();
     })();
   </script>
+${themeToggleScriptHtml()}
 </body>
 </html>`
 }
