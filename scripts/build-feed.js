@@ -78,12 +78,15 @@ export async function buildFeed() {
     for (const item of radarItems) {
       if (item.draft) continue
       const permalink = `${SITE_BASE}${item.permalink}`
-      const sourceLinkHtml = item.url
-        ? `\n<p><a href="${escapeHtml(item.url)}">Link: ${escapeHtml(item.source || item.url)}</a></p>`
+      const resolvedUrl = item.url && item.url.startsWith('/')
+        ? `${SITE_BASE}${item.url}`
+        : item.url
+      const sourceLinkHtml = resolvedUrl
+        ? `\n<p><a href="${escapeHtml(resolvedUrl)}">Link: ${escapeHtml(item.source || resolvedUrl)}</a></p>`
         : ''
       const contentHtml = `${item.bodyHtml}${sourceLinkHtml}`.trim()
-      const description = item.url
-        ? `${item.excerpt}${item.excerpt ? ' — ' : ''}${item.url}`
+      const description = resolvedUrl
+        ? `${item.excerpt}${item.excerpt ? ' — ' : ''}${resolvedUrl}`
         : (item.excerpt || item.title)
 
       feedItems.push({

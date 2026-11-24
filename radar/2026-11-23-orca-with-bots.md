@@ -1,6 +1,8 @@
 ---
 title: "Orca with bots"
 date: 2026-11-23
+url: /blog/20261124-orca-with-bots.html
+source: field note
 tags: [agents, tooling]
 ---
 

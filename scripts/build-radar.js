@@ -71,8 +71,12 @@ function generateRadarPageHTML(item, css) {
   const canonicalUrl = `${SITE_BASE}${item.permalink}`
   const description = item.excerpt || item.title
 
+  const isInternal = Boolean(item.url && item.url.startsWith('/'))
+  const linkAttrs = isInternal ? '' : ' target="_blank" rel="noopener noreferrer"'
+  const linkArrow = isInternal ? '→' : '↗'
+
   const titleMarkup = item.url
-    ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer" class="radar-page-title-link">${escapeHtml(item.title)}<span class="ext-arrow" aria-hidden="true">↗</span></a>`
+    ? `<a href="${escapeHtml(item.url)}"${linkAttrs} class="radar-page-title-link">${escapeHtml(item.title)}<span class="ext-arrow" aria-hidden="true">${linkArrow}</span></a>`
     : escapeHtml(item.title)
 
   const metaParts = [
@@ -86,8 +90,11 @@ function generateRadarPageHTML(item, css) {
   }
   const metaMarkup = metaParts.join('<span class="radar-page-sep" aria-hidden="true">·</span>')
 
+  const visitLabel = isInternal
+    ? `Read ${escapeHtml(item.source || 'note')}`
+    : `Open on ${escapeHtml(item.source || item.url)}`
   const visitLinkMarkup = item.url
-    ? `<p class="radar-page-visit"><a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">Open on ${escapeHtml(item.source || item.url)}<span class="ext-arrow" aria-hidden="true">↗</span></a></p>`
+    ? `<p class="radar-page-visit"><a href="${escapeHtml(item.url)}"${linkAttrs}>${visitLabel}<span class="ext-arrow" aria-hidden="true">${linkArrow}</span></a></p>`
     : ''
 
   return `<!DOCTYPE html>

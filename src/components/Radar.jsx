@@ -67,18 +67,18 @@ function Radar() {
         <div className="radar-list">
           {items.map((item) => {
             const isCopied = copiedSlug === item.slug
+            const isInternal = Boolean(item.url && item.url.startsWith('/'))
             return (
               <article key={item.slug} id={item.anchor} className="radar-item">
                 <div className="radar-item-header">
                   {item.url ? (
                     <a
                       href={item.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      {...(!isInternal && { target: '_blank', rel: 'noopener noreferrer' })}
                       className="radar-title"
                     >
                       {item.title}
-                      <span className="ext-arrow" aria-hidden="true">↗</span>
+                      <span className="ext-arrow" aria-hidden="true">{isInternal ? '→' : '↗'}</span>
                     </a>
                   ) : (
                     <h3 className="radar-title-plain">{item.title}</h3>

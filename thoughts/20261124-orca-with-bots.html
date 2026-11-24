@@ -1,0 +1,1010 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Coding agents edit files. Coordinators hold the thread. — Reuben Peter-Paul</title>
+  <meta name="description" content="An interactive field note on separating a persistent coordinator bot from disposable git-worktree workers." />
+  <link rel="canonical" href="https://reubenpeterpaul.com/blog/20261124-orca-with-bots.html" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="Reuben Peter-Paul" />
+  <meta property="og:title" content="Coding agents edit files. Coordinators hold the thread." />
+  <meta property="og:description" content="An interactive field note on separating a persistent coordinator bot from disposable git-worktree workers." />
+  <meta property="og:url" content="https://reubenpeterpaul.com/blog/20261124-orca-with-bots.html" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Coding agents edit files. Coordinators hold the thread." />
+  <meta name="twitter:description" content="An interactive field note on separating a persistent coordinator bot from disposable git-worktree workers." />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  <link rel="alternate" type="application/rss+xml" href="/feed.xml" title="RSS" />
+  <script>
+    (function() {
+      try {
+        var stored = localStorage.getItem('darkMode');
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (stored === 'true' || (stored === null && prefersDark)) {
+          document.documentElement.classList.add('dark');
+        }
+      } catch (e) {}
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      color-scheme: light;
+      --ex-bg: #faf8f4;
+      --ex-surface: #f1ede6;
+      --ex-surface-raised: #ffffff;
+      --ex-text: #1c1a17;
+      --ex-muted: #4a453e;
+      --ex-faint: #787067;
+      --ex-rule: #1c1a17;
+      --ex-border: #d8d2c7;
+      --ex-shade-1: #eae5dc;
+      --ex-shade-2: #ded8cd;
+      --ex-diag-bg: #ffffff;
+    }
+
+    :root.dark {
+      color-scheme: dark;
+      --ex-bg: #282828;
+      --ex-surface: #32302f;
+      --ex-surface-raised: #1d2021;
+      --ex-text: #ebdbb2;
+      --ex-muted: #d5c4a1;
+      --ex-faint: #a89984;
+      --ex-rule: #7c6f64;
+      --ex-border: #504945;
+      --ex-shade-1: #3c3836;
+      --ex-shade-2: #504945;
+      --ex-diag-bg: #242220;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--ex-bg);
+      color: var(--ex-text);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 16px;
+      line-height: 1.62;
+      -webkit-font-smoothing: antialiased;
+      transition: background-color 0.18s ease, color 0.18s ease;
+    }
+
+    .page {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 40px 28px 72px;
+    }
+
+    /* Top bar */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 44px;
+    }
+    .back-link {
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ex-faint);
+      text-decoration: none;
+    }
+    .back-link:hover { color: var(--ex-text); }
+
+    .theme-btn {
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ex-muted);
+      background: transparent;
+      border: 1px solid var(--ex-border);
+      border-radius: 4px;
+      padding: 4px 10px;
+      cursor: pointer;
+    }
+    .theme-btn:hover {
+      color: var(--ex-text);
+      border-color: var(--ex-text);
+    }
+
+    /* Kickers & Display Headings */
+    .kicker {
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      color: var(--ex-text);
+      margin-bottom: 14px;
+    }
+
+    .hero-title {
+      font-family: 'Newsreader', Georgia, serif;
+      font-variation-settings: "opsz" 60;
+      font-size: clamp(38px, 6.2vw, 56px);
+      font-weight: 400;
+      line-height: 1.05;
+      letter-spacing: -0.026em;
+      color: var(--ex-text);
+      margin-bottom: 24px;
+    }
+    .hero-title em {
+      font-style: italic;
+      font-weight: 400;
+      display: block;
+    }
+
+    .lead {
+      font-size: 19px;
+      line-height: 1.5;
+      letter-spacing: -0.012em;
+      color: var(--ex-text);
+      max-width: 62ch;
+      margin-bottom: 16px;
+    }
+
+    .companion-note {
+      font-size: 14px;
+      color: var(--ex-muted);
+      margin-bottom: 26px;
+    }
+    .companion-note a {
+      color: var(--ex-text);
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3.5px;
+    }
+
+    .jump-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 22px;
+      font-size: 14px;
+    }
+    .jump-nav a {
+      color: var(--ex-text);
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3.5px;
+      transition: opacity 0.15s ease;
+    }
+    .jump-nav a:hover { opacity: 0.68; }
+
+    .rule {
+      border: 0;
+      border-top: 1px solid var(--ex-rule);
+      margin: 48px 0 40px;
+    }
+
+    h2.sec-title {
+      font-family: 'Newsreader', Georgia, serif;
+      font-variation-settings: "opsz" 48;
+      font-size: clamp(28px, 4.2vw, 36px);
+      font-weight: 400;
+      line-height: 1.13;
+      letter-spacing: -0.022em;
+      color: var(--ex-text);
+      margin-bottom: 18px;
+    }
+
+    .prose p {
+      color: var(--ex-muted);
+      font-size: 16px;
+      line-height: 1.66;
+      max-width: 65ch;
+      margin-bottom: 16px;
+    }
+    .prose p strong {
+      color: var(--ex-text);
+      font-weight: 600;
+    }
+    .prose code {
+      font-family: 'IBM Plex Mono', ui-monospace, monospace;
+      font-size: 0.88em;
+      background: var(--ex-surface);
+      padding: 1px 5px;
+      border-radius: 3px;
+      color: var(--ex-text);
+    }
+
+    /* Monochrome Interactive Controls */
+    .control-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 24px 0 14px;
+    }
+    .control-label {
+      font-family: 'IBM Plex Mono', ui-monospace, monospace;
+      font-size: 11.5px;
+      color: var(--ex-faint);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .seg-group {
+      display: inline-flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .seg-btn {
+      font-family: 'Inter', sans-serif;
+      font-size: 12.5px;
+      font-weight: 500;
+      padding: 6px 11px;
+      border-radius: 4px;
+      border: 1px solid var(--ex-border);
+      background: transparent;
+      color: var(--ex-muted);
+      cursor: pointer;
+      transition: all 0.14s ease;
+    }
+    .seg-btn:hover {
+      border-color: var(--ex-text);
+      color: var(--ex-text);
+    }
+    .seg-btn.active {
+      background: var(--ex-text);
+      color: var(--ex-bg);
+      border-color: var(--ex-text);
+    }
+
+    /* Diagram Container */
+    .diagram-card {
+      background: var(--ex-diag-bg);
+      border: 1px solid var(--ex-border);
+      border-radius: 6px;
+      padding: 18px 16px 14px;
+      margin-bottom: 18px;
+      overflow-x: auto;
+    }
+    .diagram-caption {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed var(--ex-border);
+      font-family: 'IBM Plex Mono', ui-monospace, monospace;
+      font-size: 11px;
+      color: var(--ex-faint);
+    }
+    .drawio-svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .drawio-svg g[data-cell-id] {
+      transition: opacity 0.2s ease;
+    }
+    .drawio-svg.dim-mode g[data-cell-id] {
+      opacity: 1;
+    }
+    .drawio-svg g.is-dimmed {
+      opacity: 0.18 !important;
+    }
+
+    /* Custody Comparison Readout */
+    .custody-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .custody-cell {
+      background: var(--ex-surface);
+      border: 1px solid var(--ex-border);
+      border-radius: 5px;
+      padding: 12px 14px;
+    }
+    .custody-cell .c-head {
+      font-family: 'IBM Plex Mono', ui-monospace, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--ex-faint);
+      margin-bottom: 5px;
+    }
+    .custody-cell .c-val {
+      font-size: 13.5px;
+      line-height: 1.48;
+      color: var(--ex-text);
+    }
+
+    /* Stepper Scrubber */
+    .step-strip {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 6px;
+      margin: 22px 0 14px;
+    }
+    .step-pill {
+      text-align: left;
+      padding: 8px 9px;
+      border: 1px solid var(--ex-border);
+      border-radius: 4px;
+      background: transparent;
+      color: var(--ex-muted);
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      transition: all 0.14s ease;
+    }
+    .step-pill:hover {
+      border-color: var(--ex-text);
+      color: var(--ex-text);
+    }
+    .step-pill.active {
+      background: var(--ex-text);
+      color: var(--ex-bg);
+      border-color: var(--ex-text);
+    }
+    .step-pill .s-num {
+      display: block;
+      font-family: 'IBM Plex Mono', ui-monospace, monospace;
+      font-size: 10.5px;
+      opacity: 0.72;
+      margin-bottom: 2px;
+    }
+    .step-pill .s-lbl {
+      display: block;
+      font-size: 11.5px;
+      font-weight: 600;
+      line-height: 1.25;
+    }
+
+    .step-detail {
+      background: var(--ex-surface);
+      border: 1px solid var(--ex-border);
+      border-radius: 6px;
+      padding: 16px 18px;
+      margin-top: 14px;
+    }
+    .step-detail-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--ex-border);
+    }
+    .step-detail-title {
+      font-family: 'Newsreader', Georgia, serif;
+      font-size: 21px;
+      font-weight: 500;
+      color: var(--ex-text);
+    }
+    .step-detail-sha {
+      font-family: 'IBM Plex Mono', ui-monospace, monospace;
+      font-size: 11.5px;
+      color: var(--ex-faint);
+    }
+    .step-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .step-col h4 {
+      font-family: 'IBM Plex Mono', ui-monospace, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--ex-faint);
+      margin-bottom: 4px;
+    }
+    .step-col p {
+      font-size: 14px;
+      line-height: 1.54;
+      color: var(--ex-text);
+    }
+
+    /* Bench Table */
+    .bench-cards {
+      display: grid;
+      gap: 12px;
+      margin-top: 22px;
+    }
+    .bench-row {
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      gap: 18px;
+      padding: 16px 18px;
+      border: 1px solid var(--ex-border);
+      border-radius: 6px;
+      background: var(--ex-surface);
+      align-items: start;
+    }
+    .bench-name {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Newsreader', Georgia, serif;
+      font-size: 21px;
+      font-weight: 500;
+      color: var(--ex-text);
+    }
+    .bench-role {
+      display: block;
+      font-family: 'IBM Plex Mono', ui-monospace, monospace;
+      font-size: 11px;
+      color: var(--ex-faint);
+      margin-top: 3px;
+    }
+    .bench-spec {
+      display: grid;
+      gap: 6px;
+      font-size: 14.5px;
+      color: var(--ex-muted);
+    }
+    .bench-spec strong {
+      color: var(--ex-text);
+      font-weight: 600;
+    }
+    .tool-glyph {
+      display: inline-block;
+      vertical-align: middle;
+      color: var(--ex-text);
+      flex-shrink: 0;
+    }
+
+    /* Self-check section ("Check yourself" style) */
+    .quiz-list {
+      display: grid;
+      gap: 14px;
+      margin-top: 22px;
+    }
+    .quiz-card {
+      border: 1px solid var(--ex-border);
+      border-radius: 6px;
+      padding: 16px 18px;
+      background: var(--ex-surface);
+    }
+    .quiz-q {
+      font-size: 15.5px;
+      font-weight: 500;
+      color: var(--ex-text);
+      margin-bottom: 12px;
+    }
+    .quiz-opts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .quiz-opt {
+      font-family: 'IBM Plex Mono', ui-monospace, monospace;
+      font-size: 12px;
+      padding: 5px 10px;
+      border-radius: 4px;
+      border: 1px solid var(--ex-border);
+      background: var(--ex-bg);
+      color: var(--ex-muted);
+      cursor: pointer;
+      transition: all 0.14s ease;
+    }
+    .quiz-opt:hover {
+      border-color: var(--ex-text);
+      color: var(--ex-text);
+    }
+    .quiz-opt.picked-right {
+      background: var(--ex-text);
+      color: var(--ex-bg);
+      border-color: var(--ex-text);
+    }
+    .quiz-opt.picked-other {
+      border-style: dashed;
+      color: var(--ex-text);
+    }
+    .quiz-explain {
+      display: none;
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid var(--ex-border);
+      font-size: 14px;
+      line-height: 1.55;
+      color: var(--ex-muted);
+    }
+    .quiz-explain.visible { display: block; }
+    .quiz-explain strong { color: var(--ex-text); }
+
+    /* Footer */
+    .foot {
+      margin-top: 52px;
+      padding-top: 22px;
+      border-top: 1px solid var(--ex-rule);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 14px;
+      color: var(--ex-muted);
+    }
+    .foot a {
+      color: var(--ex-text);
+      text-decoration: underline;
+      text-underline-offset: 3.5px;
+    }
+
+    @media (max-width: 680px) {
+      .page { padding: 28px 18px 56px; }
+      .custody-grid { grid-template-columns: 1fr; }
+      .step-strip { grid-template-columns: repeat(2, 1fr); }
+      .step-cols { grid-template-columns: 1fr; gap: 10px; }
+      .bench-row { grid-template-columns: 1fr; gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <a class="back-link" href="/">← Reuben Peter-Paul</a>
+      <button class="theme-btn" onclick="toggleTheme()" aria-label="Toggle light and dark theme">◐ Theme</button>
+    </header>
+
+    <div class="kicker">Field Note · Unpacking One Session</div>
+
+    <h1 class="hero-title">
+      Coding agents edit files.
+      <em>Coordinators hold the thread.</em>
+    </h1>
+
+    <p class="lead">
+      "Using an IDE with bots" sounds like running one more coding CLI inside an editor pane. The tools look similar. The job is not.
+    </p>
+
+    <p class="companion-note">
+      Expanded from Worth Looking At: <a href="/#radar-orca-with-bots">Orca with bots</a> · Nov 24, 2026
+    </p>
+
+    <nav class="jump-nav" aria-label="Sections">
+      <a href="#distinction">The distinction</a>
+      <a href="#session">Through one session</a>
+      <a href="#bench">Three tools on the bench</a>
+      <a href="#bites">Where it still bites</a>
+      <a href="#check">Check yourself</a>
+    </nav>
+
+    <hr class="rule" id="distinction" />
+
+    <!-- SECTION 01 -->
+    <section>
+      <div class="kicker">01 / Separate the Jobs</div>
+      <h2 class="sec-title">A coding harness is not a coordinator.</h2>
+
+      <div class="prose">
+        <p>
+          A coding harness—<code>Pi</code>, <code>Claude Code</code>, or any single-session CLI—is a sharp tool inside one repository session. Point it at a directory with a bounded problem and it reads files, edits code, runs tests, and stops.
+        </p>
+        <p>
+          Shipping a change usually crosses more than one surface and outlasts one terminal session. Reshaping this site meant reading an older config repository, shaping a two-week pitch into Obsidian, spinning up an isolated git worktree, previewing typography changes live, watching pull-request checks, and cutting legacy code across six commits. Without a coordinator, <strong>you</strong> are the glue between every one of those surfaces.
+        </p>
+      </div>
+
+      <div class="control-bar">
+        <span class="control-label">Inspect custody model</span>
+        <div class="seg-group" role="tablist" aria-label="Custody comparison">
+          <button class="seg-btn active" onclick="setTopology('both', this)">Side by side</button>
+          <button class="seg-btn" onclick="setTopology('cli', this)">A · Single-session CLI alone</button>
+          <button class="seg-btn" onclick="setTopology('coord', this)">B · Coordinator + workers</button>
+        </div>
+      </div>
+
+      <div class="diagram-card">
+        <svg id="svg-topology" class="drawio-svg" xmlns="http://www.w3.org/2000/svg" style="background: transparent; background-color: transparent; color-scheme: inherit;" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1"   viewBox="0 0 911 331" content="&lt;mxfile host=&quot;Electron&quot;&gt;&#10;  &lt;diagram id=&quot;custody-topology&quot; name=&quot;Custody Topology&quot;&gt;&#10;    &lt;mxGraphModel grid=&quot;0&quot; gridSize=&quot;10&quot; guides=&quot;1&quot; tooltips=&quot;1&quot; connect=&quot;1&quot; arrows=&quot;1&quot; fold=&quot;0&quot; page=&quot;0&quot; pageScale=&quot;1&quot; pageWidth=&quot;850&quot; pageHeight=&quot;1100&quot; math=&quot;0&quot; shadow=&quot;0&quot;&gt;&#10;      &lt;root&gt;&#10;        &lt;mxCell id=&quot;0&quot; /&gt;&#10;        &lt;mxCell id=&quot;1&quot; parent=&quot;0&quot; /&gt;&#10;        &lt;mxCell id=&quot;left-frame&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=4;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#888888;strokeWidth=1;dashed=1;dashPattern=4 4;&quot; value=&quot;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;310&quot; width=&quot;420&quot; x=&quot;20&quot; y=&quot;20&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;left-title&quot; parent=&quot;1&quot; style=&quot;text;html=1;align=left;verticalAlign=top;whiteSpace=wrap;fontFamily=Helvetica;fontSize=13;fontColor=#1c1a17;&quot; value=&quot;&amp;lt;b&amp;gt;A. Single-session CLI alone&amp;lt;/b&amp;gt;&amp;lt;br&amp;gt;&amp;lt;font color=&amp;quot;#666666&amp;quot; style=&amp;quot;font-size:11px;&amp;quot;&amp;gt;Every state transition routes back through your head.&amp;lt;/font&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;40&quot; width=&quot;380&quot; x=&quot;36&quot; y=&quot;32&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;l-repos&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#eeeeee;strokeColor=#1c1a17;strokeWidth=1.25;fontFamily=Helvetica;fontSize=12;fontColor=#1c1a17;&quot; value=&quot;GitHub repos &amp;amp;amp; PR CI&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;44&quot; width=&quot;155&quot; x=&quot;40&quot; y=&quot;92&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;l-vault&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#eeeeee;strokeColor=#1c1a17;strokeWidth=1.25;fontFamily=Helvetica;fontSize=12;fontColor=#1c1a17;&quot; value=&quot;Obsidian pitch &amp;amp;amp; notes&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;44&quot; width=&quot;155&quot; x=&quot;265&quot; y=&quot;92&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;l-you&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillStyle=cross-hatch;fillColor=#888888;hachureGap=8;hachureAngle=-45;sketch=0;jiggle=0;strokeColor=#1c1a17;strokeWidth=1.5;fontFamily=Helvetica;fontSize=12;fontColor=#1c1a17;labelBackgroundColor=#ffffff;&quot; value=&quot;&amp;lt;span style=&amp;quot;background-color:#ffffff;padding:2px 6px;&amp;quot;&amp;gt;&amp;lt;b&amp;gt;You (human clipboard)&amp;lt;/b&amp;gt;&amp;lt;/span&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;52&quot; width=&quot;210&quot; x=&quot;125&quot; y=&quot;168&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;l-cli&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#eeeeee;strokeColor=#1c1a17;strokeWidth=1.25;fontFamily=Helvetica;fontSize=12;fontColor=#1c1a17;&quot; value=&quot;Coding CLI in terminal&amp;lt;br&amp;gt;&amp;lt;font color=&amp;quot;#666666&amp;quot; style=&amp;quot;font-size:10px;&amp;quot;&amp;gt;forgets when closed&amp;lt;/font&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;48&quot; width=&quot;155&quot; x=&quot;40&quot; y=&quot;254&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;l-preview&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#eeeeee;strokeColor=#1c1a17;strokeWidth=1.25;fontFamily=Helvetica;fontSize=12;fontColor=#1c1a17;&quot; value=&quot;Dev server &amp;amp;amp; browser&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;48&quot; width=&quot;155&quot; x=&quot;265&quot; y=&quot;254&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;le1&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;l-repos&quot; style=&quot;endArrow=block;startArrow=block;endFill=1;startFill=1;strokeColor=#1c1a17;strokeWidth=1.25;&quot; target=&quot;l-you&quot;&gt;&#10;          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;le2&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;l-vault&quot; style=&quot;endArrow=block;startArrow=block;endFill=1;startFill=1;strokeColor=#1c1a17;strokeWidth=1.25;&quot; target=&quot;l-you&quot;&gt;&#10;          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;le3&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;l-you&quot; style=&quot;endArrow=block;startArrow=block;endFill=1;startFill=1;strokeColor=#1c1a17;strokeWidth=1.25;&quot; target=&quot;l-cli&quot;&gt;&#10;          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;le4&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;l-you&quot; style=&quot;endArrow=block;startArrow=block;endFill=1;startFill=1;strokeColor=#1c1a17;strokeWidth=1.25;&quot; target=&quot;l-preview&quot;&gt;&#10;          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;right-frame&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=4;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#1c1a17;strokeWidth=1.5;&quot; value=&quot;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;310&quot; width=&quot;440&quot; x=&quot;470&quot; y=&quot;20&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;right-title&quot; parent=&quot;1&quot; style=&quot;text;html=1;align=left;verticalAlign=top;whiteSpace=wrap;fontFamily=Helvetica;fontSize=13;fontColor=#1c1a17;&quot; value=&quot;&amp;lt;b&amp;gt;B. Persistent coordinator + disposable workers&amp;lt;/b&amp;gt;&amp;lt;br&amp;gt;&amp;lt;font color=&amp;quot;#666666&amp;quot; style=&amp;quot;font-size:11px;&amp;quot;&amp;gt;You judge outcomes; the coordinator holds the thread.&amp;lt;/font&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;40&quot; width=&quot;405&quot; x=&quot;486&quot; y=&quot;32&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;r-you&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1c1a17;strokeWidth=1.5;fontFamily=Helvetica;fontSize=12;fontColor=#1c1a17;&quot; value=&quot;&amp;lt;b&amp;gt;You&amp;lt;/b&amp;gt; — appetite, taste, scope cuts &amp;amp;amp; merge call&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;42&quot; width=&quot;310&quot; x=&quot;535&quot; y=&quot;86&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;r-bot&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillStyle=hatch;fillColor=#888888;hachureGap=8;hachureAngle=-45;sketch=0;jiggle=0;strokeColor=#1c1a17;strokeWidth=1.5;fontFamily=Helvetica;fontSize=12;fontColor=#1c1a17;labelBackgroundColor=#ffffff;&quot; value=&quot;&amp;lt;span style=&amp;quot;padding:2px 6px;&amp;quot;&amp;gt;&amp;lt;b&amp;gt;Persistent bot (Orca)&amp;lt;/b&amp;gt; — memory, items &amp;amp;amp; watches&amp;lt;/span&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;52&quot; width=&quot;340&quot; x=&quot;520&quot; y=&quot;162&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;r-vault&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1c1a17;strokeWidth=1.25;fontFamily=Helvetica;fontSize=11.5;fontColor=#1c1a17;&quot; value=&quot;Obsidian vault&amp;lt;br&amp;gt;&amp;lt;font color=&amp;quot;#666666&amp;quot; style=&amp;quot;font-size:10px;&amp;quot;&amp;gt;durable .md pitches&amp;lt;/font&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;50&quot; width=&quot;124&quot; x=&quot;488&quot; y=&quot;252&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;r-worker&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#e6e6e6;strokeColor=#1c1a17;strokeWidth=1.25;fontFamily=Helvetica;fontSize=11.5;fontColor=#1c1a17;&quot; value=&quot;Worktree worker&amp;lt;br&amp;gt;&amp;lt;font color=&amp;quot;#666666&amp;quot; style=&amp;quot;font-size:10px;&amp;quot;&amp;gt;isolated git branch&amp;lt;/font&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;50&quot; width=&quot;124&quot; x=&quot;628&quot; y=&quot;252&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;r-ci&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1c1a17;strokeWidth=1.25;fontFamily=Helvetica;fontSize=11.5;fontColor=#1c1a17;&quot; value=&quot;Preview + GitHub&amp;lt;br&amp;gt;&amp;lt;font color=&amp;quot;#666666&amp;quot; style=&amp;quot;font-size:10px;&amp;quot;&amp;gt;wakes on PR event&amp;lt;/font&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;50&quot; width=&quot;124&quot; x=&quot;768&quot; y=&quot;252&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;re1&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;r-you&quot; style=&quot;endArrow=block;startArrow=block;endFill=1;startFill=1;strokeColor=#1c1a17;strokeWidth=1.5;&quot; target=&quot;r-bot&quot;&gt;&#10;          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;re2&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;r-bot&quot; style=&quot;endArrow=block;endFill=1;strokeColor=#1c1a17;strokeWidth=1.25;&quot; target=&quot;r-vault&quot;&gt;&#10;          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;re3&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;r-bot&quot; style=&quot;endArrow=block;startArrow=block;endFill=1;startFill=1;strokeColor=#1c1a17;strokeWidth=1.25;&quot; target=&quot;r-worker&quot;&gt;&#10;          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;re4&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;r-bot&quot; style=&quot;endArrow=block;endFill=1;strokeColor=#1c1a17;strokeWidth=1.25;&quot; target=&quot;r-ci&quot;&gt;&#10;          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;      &lt;/root&gt;&#10;    &lt;/mxGraphModel&gt;&#10;  &lt;/diagram&gt;&#10;&lt;/mxfile&gt;&#10;"><defs><pattern patternUnits="userSpaceOnUse" width="8" height="8" x="0" y="0" id="topo-mx-pattern-cross-hatch-150-_888888-_787878-100-800-75--4500-0" patternTransform="translate(0,0) rotate(45) scale(1)"><rect x="0" y="0" width="8" height="8" stroke="#888888" stroke-width="0.75" fill="none" style="stroke: light-dark(rgb(136, 136, 136), rgb(120, 120, 120));"/></pattern><pattern patternUnits="userSpaceOnUse" width="8" height="8" x="0" y="0" id="topo-mx-pattern-hatch-150-_888888-_787878-100-800-75--4500-0" patternTransform="translate(0,0) rotate(45) scale(1)"><line x1="4" y1="0" x2="4" y2="8" stroke="#888888" stroke-width="0.75" style="stroke: light-dark(rgb(136, 136, 136), rgb(120, 120, 120));"/></pattern></defs><g><g data-cell-id="0"><g data-cell-id="1"><g data-cell-id="left-frame"><g transform="translate(0.5,0.5)"><rect x="6" y="6" width="420" height="310" rx="12.4" ry="12.4" fill="none" stroke="#888888" stroke-dasharray="4 4" pointer-events="all" style="stroke: light-dark(rgb(136, 136, 136), rgb(120, 120, 120));"/></g></g><g data-cell-id="left-title"><g><rect x="22" y="18" width="380" height="40" fill="none" stroke="none" pointer-events="all"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe flex-start; justify-content: unsafe flex-start; width: 378px; height: 1px; padding-top: 25px; margin-left: 24px;"><div style="box-sizing: border-box; font-size: 0; text-align: left; color: #1c1a17; "><div style="display: inline-block; font-size: 13px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; "><b>A. Single-session CLI alone</b><br /><span style="font-size: 11px; color: light-dark(rgb(102, 102, 102), rgb(149, 149, 149));">Every state transition routes back through your head.</span></div></div></div></foreignObject><text x="24" y="38" fill="#1c1a17" font-family="Helvetica" font-size="13px" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"><tspan x="24" y="38">A. Single-session CLI alone</tspan><tspan x="24" y="54">Every state transition routes back through your head.</tspan></text></switch></g></g></g><g data-cell-id="l-repos"><g transform="translate(0.5,0.5)"><rect x="26" y="78" width="155" height="44" rx="6.16" ry="6.16" fill="#eeeeee" stroke="#1c1a17" stroke-width="1.25" pointer-events="all" style="fill: light-dark(rgb(238, 238, 238), rgb(32, 32, 32)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 153px; height: 1px; padding-top: 100px; margin-left: 27px;"><div style="box-sizing: border-box; font-size: 0; text-align: center; color: #1c1a17; "><div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">GitHub repos &amp; PR CI</div></div></div></foreignObject><text x="104" y="104" fill="#1c1a17" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));">GitHub repos &amp; PR CI</text></switch></g></g></g><g data-cell-id="l-vault"><g transform="translate(0.5,0.5)"><rect x="251" y="78" width="155" height="44" rx="6.16" ry="6.16" fill="#eeeeee" stroke="#1c1a17" stroke-width="1.25" pointer-events="all" style="fill: light-dark(rgb(238, 238, 238), rgb(32, 32, 32)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 153px; height: 1px; padding-top: 100px; margin-left: 252px;"><div style="box-sizing: border-box; font-size: 0; text-align: center; color: #1c1a17; "><div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">Obsidian pitch &amp; notes</div></div></div></foreignObject><text x="329" y="104" fill="#1c1a17" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));">Obsidian pitch &amp; notes</text></switch></g></g></g><g data-cell-id="l-you"><g><rect x="111" y="154" width="210" height="52" rx="6.24" ry="6.24" fill="url(#topo-mx-pattern-cross-hatch-150-_888888-_787878-100-800-75--4500-0)" stroke="#1c1a17" stroke-width="1.5" pointer-events="all" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 208px; height: 1px; padding-top: 180px; margin-left: 112px;"><div style="box-sizing: border-box; font-size: 0; text-align: center; color: #1c1a17; background-color: #ffffff; "><div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; background-color: light-dark(#ffffff, #121212); white-space: normal; word-wrap: normal; "><span style="background-color: light-dark(rgb(255, 255, 255), rgb(18, 18, 18)); padding: 2px 6px;"><b>You (human clipboard)</b></span></div></div></div></foreignObject><text x="216" y="184" fill="#1c1a17" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));">You (human clipboard)</text></switch></g></g></g><g data-cell-id="l-cli"><g transform="translate(0.5,0.5)"><rect x="26" y="240" width="155" height="48" rx="6.72" ry="6.72" fill="#eeeeee" stroke="#1c1a17" stroke-width="1.25" pointer-events="all" style="fill: light-dark(rgb(238, 238, 238), rgb(32, 32, 32)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 153px; height: 1px; padding-top: 264px; margin-left: 27px;"><div style="box-sizing: border-box; font-size: 0; text-align: center; color: #1c1a17; "><div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">Coding CLI in terminal<br /><span style="font-size: 10px; color: light-dark(rgb(102, 102, 102), rgb(149, 149, 149));">forgets when closed</span></div></div></div></foreignObject><text x="104" y="261" fill="#1c1a17" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"><tspan x="104" y="261">Coding CLI in terminal</tspan><tspan x="104" y="275">forgets when closed</tspan></text></switch></g></g></g><g data-cell-id="l-preview"><g transform="translate(0.5,0.5)"><rect x="251" y="240" width="155" height="48" rx="6.72" ry="6.72" fill="#eeeeee" stroke="#1c1a17" stroke-width="1.25" pointer-events="all" style="fill: light-dark(rgb(238, 238, 238), rgb(32, 32, 32)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 153px; height: 1px; padding-top: 264px; margin-left: 252px;"><div style="box-sizing: border-box; font-size: 0; text-align: center; color: #1c1a17; "><div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">Dev server &amp; browser</div></div></div></foreignObject><text x="329" y="268" fill="#1c1a17" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));">Dev server &amp; browser</text></switch></g></g></g><g data-cell-id="le1"><g transform="translate(0.5,0.5)"><path d="M 141.48 127.01 L 172.39 148.99" fill="none" stroke="#1c1a17" stroke-width="1.25" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/><path d="M 135.58 122.81 L 143.59 124.06 L 139.38 129.97 Z" fill="#1c1a17" stroke="#1c1a17" stroke-width="1.25" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/><path d="M 178.3 153.19 L 170.29 151.94 L 174.49 146.03 Z" fill="#1c1a17" stroke="#1c1a17" stroke-width="1.25" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="le2"><g transform="translate(0.5,0.5)"><path d="M 290.52 127.01 L 259.61 148.99" fill="none" stroke="#1c1a17" stroke-width="1.25" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/><path d="M 296.42 122.81 L 292.62 129.97 L 288.41 124.06 Z" fill="#1c1a17" stroke="#1c1a17" stroke-width="1.25" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/><path d="M 253.7 153.19 L 257.51 146.03 L 261.71 151.94 Z" fill="#1c1a17" stroke="#1c1a17" stroke-width="1.25" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="le3"><g transform="translate(0.5,0.5)"><path d="M 174.25 211.17 L 142.57 234.83" fill="none" stroke="#1c1a17" stroke-width="1.25" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/><path d="M 180.06 206.84 L 176.42 214.08 L 172.08 208.27 Z" fill="#1c1a17" stroke="#1c1a17" stroke-width="1.25" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/><path d="M 136.76 239.16 L 140.4 231.92 L 144.74 237.73 Z" fill="#1c1a17" stroke="#1c1a17" stroke-width="1.25" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="le4"><g transform="translate(0.5,0.5)"><path d="M 257.75 211.17 L 289.43 234.83" fill="none" stroke="#1c1a17" stroke-width="1.25" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/><path d="M 251.94 206.84 L 259.92 208.27 L 255.58 214.08 Z" fill="#1c1a17" stroke="#1c1a17" stroke-width="1.25" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/><path d="M 295.24 239.16 L 287.26 237.73 L 291.6 231.92 Z" fill="#1c1a17" stroke="#1c1a17" stroke-width="1.25" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="right-frame"><g><rect x="456" y="6" width="440" height="310" rx="12.4" ry="12.4" fill="none" stroke="#1c1a17" stroke-width="1.5" pointer-events="all" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="right-title"><g><rect x="472" y="18" width="405" height="40" fill="none" stroke="none" pointer-events="all"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe flex-start; justify-content: unsafe flex-start; width: 403px; height: 1px; padding-top: 25px; margin-left: 474px;"><div style="box-sizing: border-box; font-size: 0; text-align: left; color: #1c1a17; "><div style="display: inline-block; font-size: 13px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; "><b>B. Persistent coordinator + disposable workers</b><br /><span style="font-size: 11px; color: light-dark(rgb(102, 102, 102), rgb(149, 149, 149));">You judge outcomes; the coordinator holds the thread.</span></div></div></div></foreignObject><text x="474" y="38" fill="#1c1a17" font-family="Helvetica" font-size="13px" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"><tspan x="474" y="38">B. Persistent coordinator + disposable workers</tspan><tspan x="474" y="54">You judge outcomes; the coordinator holds the thread.</tspan></text></switch></g></g></g><g data-cell-id="r-you"><g><rect x="521" y="72" width="310" height="42" rx="5.88" ry="5.88" fill="#ffffff" stroke="#1c1a17" stroke-width="1.5" pointer-events="all" style="fill: light-dark(rgb(255, 255, 255), rgb(18, 18, 18)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 308px; height: 1px; padding-top: 93px; margin-left: 522px;"><div style="box-sizing: border-box; font-size: 0; text-align: center; color: #1c1a17; "><div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; "><b>You</b> — appetite, taste, scope cuts &amp; merge call</div></div></div></foreignObject><text x="676" y="97" fill="#1c1a17" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));">You — appetite, taste, scope cuts &amp; merge call</text></switch></g></g></g><g data-cell-id="r-bot"><g><rect x="506" y="148" width="340" height="52" rx="6.24" ry="6.24" fill="url(#topo-mx-pattern-hatch-150-_888888-_787878-100-800-75--4500-0)" stroke="#1c1a17" stroke-width="1.5" pointer-events="all" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 338px; height: 1px; padding-top: 174px; margin-left: 507px;"><div style="box-sizing: border-box; font-size: 0; text-align: center; color: #1c1a17; background-color: #ffffff; "><div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; background-color: light-dark(#ffffff, #121212); white-space: normal; word-wrap: normal; "><span style="padding:2px 6px;"><b>Persistent bot (Orca)</b> — memory, items &amp; watches</span></div></div></div></foreignObject><text x="676" y="178" fill="#1c1a17" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));">Persistent bot (Orca) — memory, items &amp; watches</text></switch></g></g></g><g data-cell-id="r-vault"><g transform="translate(0.5,0.5)"><rect x="474" y="238" width="124" height="50" rx="7" ry="7" fill="#ffffff" stroke="#1c1a17" stroke-width="1.25" pointer-events="all" style="fill: light-dark(rgb(255, 255, 255), rgb(18, 18, 18)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 122px; height: 1px; padding-top: 263px; margin-left: 475px;"><div style="box-sizing: border-box; font-size: 0; text-align: center; color: #1c1a17; "><div style="display: inline-block; font-size: 11.5px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">Obsidian vault<br /><span style="font-size: 10px; color: light-dark(rgb(102, 102, 102), rgb(149, 149, 149));">durable .md pitches</span></div></div></div></foreignObject><text x="536" y="259" fill="#1c1a17" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"><tspan x="536" y="259">Obsidian vault</tspan><tspan x="536" y="273">durable .md pitches</tspan></text></switch></g></g></g><g data-cell-id="r-worker"><g transform="translate(0.5,0.5)"><rect x="614" y="238" width="124" height="50" rx="7" ry="7" fill="#e6e6e6" stroke="#1c1a17" stroke-width="1.25" pointer-events="all" style="fill: light-dark(rgb(230, 230, 230), rgb(39, 39, 39)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 122px; height: 1px; padding-top: 263px; margin-left: 615px;"><div style="box-sizing: border-box; font-size: 0; text-align: center; color: #1c1a17; "><div style="display: inline-block; font-size: 11.5px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">Worktree worker<br /><span style="font-size: 10px; color: light-dark(rgb(102, 102, 102), rgb(149, 149, 149));">isolated git branch</span></div></div></div></foreignObject><text x="676" y="259" fill="#1c1a17" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"><tspan x="676" y="259">Worktree worker</tspan><tspan x="676" y="273">isolated git branch</tspan></text></switch></g></g></g><g data-cell-id="r-ci"><g transform="translate(0.5,0.5)"><rect x="754" y="238" width="124" height="50" rx="7" ry="7" fill="#ffffff" stroke="#1c1a17" stroke-width="1.25" pointer-events="all" style="fill: light-dark(rgb(255, 255, 255), rgb(18, 18, 18)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 122px; height: 1px; padding-top: 263px; margin-left: 755px;"><div style="box-sizing: border-box; font-size: 0; text-align: center; color: #1c1a17; "><div style="display: inline-block; font-size: 11.5px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">Preview + GitHub<br /><span style="font-size: 10px; color: light-dark(rgb(102, 102, 102), rgb(149, 149, 149));">wakes on PR event</span></div></div></div></foreignObject><text x="816" y="259" fill="#1c1a17" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"><tspan x="816" y="259">Preview + GitHub</tspan><tspan x="816" y="273">wakes on PR event</tspan></text></switch></g></g></g><g data-cell-id="re1"><g><path d="M 676 123.18 L 676 138.82" fill="none" stroke="#1c1a17" stroke-width="1.5" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/><path d="M 676 115.68 L 679.75 123.18 L 672.25 123.18 Z" fill="#1c1a17" stroke="#1c1a17" stroke-width="1.5" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/><path d="M 676 146.32 L 672.25 138.82 L 679.75 138.82 Z" fill="#1c1a17" stroke="#1c1a17" stroke-width="1.5" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="re2"><g transform="translate(0.5,0.5)"><path d="M 635.1 200 L 582.62 233.36" fill="none" stroke="#1c1a17" stroke-width="1.25" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/><path d="M 576.51 237.25 L 580.68 230.3 L 584.57 236.42 Z" fill="#1c1a17" stroke="#1c1a17" stroke-width="1.25" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="re3"><g transform="translate(0.5,0.5)"><path d="M 676 208.65 L 676 229.35" fill="none" stroke="#1c1a17" stroke-width="1.25" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/><path d="M 676 201.4 L 679.63 208.65 L 672.38 208.65 Z" fill="#1c1a17" stroke="#1c1a17" stroke-width="1.25" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/><path d="M 676 236.6 L 672.38 229.35 L 679.63 229.35 Z" fill="#1c1a17" stroke="#1c1a17" stroke-width="1.25" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="re4"><g transform="translate(0.5,0.5)"><path d="M 716.9 200 L 769.38 233.36" fill="none" stroke="#1c1a17" stroke-width="1.25" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/><path d="M 775.49 237.25 L 767.43 236.42 L 771.32 230.3 Z" fill="#1c1a17" stroke="#1c1a17" stroke-width="1.25" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g></g></g></g><switch><g requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"/><a transform="translate(0,-5)" xlink:href="https://www.drawio.com/doc/faq/svg-export-text-problems" target="_blank"><text text-anchor="middle" font-size="10px" x="50%" y="100%">Text is not SVG - cannot display</text></a></switch></svg>
+        <div class="diagram-caption">
+          <span>Figure 1 · Custody topology (draw.io SVG · shades of gray &amp; hatching)</span>
+          <span id="topo-status">Showing both topologies</span>
+        </div>
+      </div>
+
+      <div class="custody-grid" id="custody-readout">
+        <div class="custody-cell">
+          <div class="c-head">Project memory</div>
+          <div class="c-val" id="c-mem"><strong>CLI alone:</strong> Re-explained per terminal.<br><strong>With bot:</strong> Held in <code>MEMORY.md</code> &amp; Obsidian.</div>
+        </div>
+        <div class="custody-cell">
+          <div class="c-head">Repo isolation</div>
+          <div class="c-val" id="c-iso"><strong>CLI alone:</strong> You manage branches &amp; tabs.<br><strong>With bot:</strong> Disposable child git worktrees.</div>
+        </div>
+        <div class="custody-cell">
+          <div class="c-head">Waiting on CI / PR</div>
+          <div class="c-val" id="c-wait"><strong>CLI alone:</strong> You poll or keep tabs open.<br><strong>With bot:</strong> Event wake on PR check or review.</div>
+        </div>
+      </div>
+    </section>
+
+    <hr class="rule" id="session" />
+
+    <!-- SECTION 02 -->
+    <section>
+      <div class="kicker">02 / Walk One Real Session</div>
+      <h2 class="sec-title">One morning, six commits, zero terminals opened.</h2>
+
+      <div class="prose">
+        <p>
+          To test whether this distinction holds up outside a demo, look at the exact session that rebuilt <code>reubenpeterpaul.com</code> on November 24. Step through the breadboard below to see where each decision lived—and which boundary caught each mistake.
+        </p>
+      </div>
+
+      <div class="step-strip" role="tablist" aria-label="Session walkthrough steps">
+        <button class="step-pill active" onclick="setStep(0, this)">
+          <span class="s-num">ALL</span>
+          <span class="s-lbl">Full breadboard</span>
+        </button>
+        <button class="step-pill" onclick="setStep(1, this)">
+          <span class="s-num">01</span>
+          <span class="s-lbl">Shape the bet</span>
+        </button>
+        <button class="step-pill" onclick="setStep(2, this)">
+          <span class="s-num">02</span>
+          <span class="s-lbl">Spawn worker</span>
+        </button>
+        <button class="step-pill" onclick="setStep(3, this)">
+          <span class="s-num">03</span>
+          <span class="s-lbl">Live preview</span>
+        </button>
+        <button class="step-pill" onclick="setStep(4, this)">
+          <span class="s-num">04</span>
+          <span class="s-lbl">Enforce taste</span>
+        </button>
+        <button class="step-pill" onclick="setStep(5, this)">
+          <span class="s-num">05</span>
+          <span class="s-lbl">Cut legacy</span>
+        </button>
+        <button class="step-pill" onclick="setStep(6, this)">
+          <span class="s-num">06</span>
+          <span class="s-lbl">Merge &amp; ship</span>
+        </button>
+      </div>
+
+      <div class="diagram-card">
+        <svg id="svg-breadboard" class="drawio-svg" xmlns="http://www.w3.org/2000/svg" style="background: transparent; background-color: transparent; color-scheme: inherit;" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1"   viewBox="0 0 948 390" content="&lt;mxfile host=&quot;Electron&quot;&gt;&#10;  &lt;diagram id=&quot;session-breadboard&quot; name=&quot;Session Breadboard&quot;&gt;&#10;    &lt;mxGraphModel grid=&quot;0&quot; gridSize=&quot;10&quot; guides=&quot;1&quot; tooltips=&quot;1&quot; connect=&quot;1&quot; arrows=&quot;1&quot; fold=&quot;0&quot; page=&quot;0&quot; pageScale=&quot;1&quot; pageWidth=&quot;850&quot; pageHeight=&quot;1100&quot; math=&quot;0&quot; shadow=&quot;0&quot;&gt;&#10;      &lt;root&gt;&#10;        &lt;mxCell id=&quot;0&quot; /&gt;&#10;        &lt;mxCell id=&quot;1&quot; parent=&quot;0&quot; /&gt;&#10;        &lt;mxCell id=&quot;place-human&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=5;whiteSpace=wrap;html=1;fillStyle=hatch;fillColor=#8c8c8c;hachureGap=9;hachureAngle=-45;sketch=0;jiggle=0;strokeColor=#1c1a17;strokeWidth=1.5;&quot; value=&quot;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;235&quot; width=&quot;275&quot; x=&quot;20&quot; y=&quot;20&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;place-human-label&quot; parent=&quot;1&quot; style=&quot;text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;fontSize=15;fontColor=#1c1a17;labelBackgroundColor=#ffffff;spacingLeft=4;spacingRight=4;&quot; value=&quot;&amp;lt;u&amp;gt;&amp;lt;b&amp;gt;You &amp;amp;amp; Obsidian&amp;lt;/b&amp;gt;&amp;lt;/u&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;26&quot; width=&quot;145&quot; x=&quot;38&quot; y=&quot;34&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;op-taste&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1c1a17;strokeWidth=1.5;fontFamily=Helvetica;fontSize=12;align=left;spacingLeft=12;fontColor=#1c1a17;&quot; value=&quot;set appetite, problem &amp;amp;amp; taste&amp;lt;br&amp;gt;&amp;lt;font color=&amp;quot;#666666&amp;quot; style=&amp;quot;font-size:11px;&amp;quot;&amp;gt;Gruvbox + Warm Paper, scope cuts&amp;lt;/font&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;64&quot; width=&quot;238&quot; x=&quot;38&quot; y=&quot;76&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;op-vault&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1c1a17;strokeWidth=1.5;fontFamily=Helvetica;fontSize=12;align=left;spacingLeft=12;fontColor=#1c1a17;&quot; value=&quot;keep pitches &amp;amp;amp; drafts in .md&amp;lt;br&amp;gt;&amp;lt;font color=&amp;quot;#666666&amp;quot; style=&amp;quot;font-size:11px;&amp;quot;&amp;gt;durable outside any agent runtime&amp;lt;/font&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;64&quot; width=&quot;238&quot; x=&quot;38&quot; y=&quot;162&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;place-bot&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=5;whiteSpace=wrap;html=1;fillStyle=hatch;fillColor=#8c8c8c;hachureGap=9;hachureAngle=-45;sketch=0;jiggle=0;strokeColor=#1c1a17;strokeWidth=1.5;&quot; value=&quot;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;235&quot; width=&quot;285&quot; x=&quot;340&quot; y=&quot;20&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;place-bot-label&quot; parent=&quot;1&quot; style=&quot;text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;fontSize=15;fontColor=#1c1a17;labelBackgroundColor=#ffffff;spacingLeft=4;spacingRight=4;&quot; value=&quot;&amp;lt;u&amp;gt;&amp;lt;b&amp;gt;Persistent bot (Orca)&amp;lt;/b&amp;gt;&amp;lt;/u&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;26&quot; width=&quot;175&quot; x=&quot;358&quot; y=&quot;34&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;op-coord&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1c1a17;strokeWidth=1.5;fontFamily=Helvetica;fontSize=12;align=left;spacingLeft=12;fontColor=#1c1a17;&quot; value=&quot;read repos, shape &amp;amp;amp; track items&amp;lt;br&amp;gt;&amp;lt;font color=&amp;quot;#666666&amp;quot; style=&amp;quot;font-size:11px;&amp;quot;&amp;gt;MEMORY.md + bounded worker specs&amp;lt;/font&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;64&quot; width=&quot;248&quot; x=&quot;358&quot; y=&quot;76&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;op-watch&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1c1a17;strokeWidth=1.5;fontFamily=Helvetica;fontSize=12;align=left;spacingLeft=12;fontColor=#1c1a17;&quot; value=&quot;run preview, mockups &amp;amp;amp; PR watch&amp;lt;br&amp;gt;&amp;lt;font color=&amp;quot;#666666&amp;quot; style=&amp;quot;font-size:11px;&amp;quot;&amp;gt;localhost:5173 + event wake on #5&amp;lt;/font&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;64&quot; width=&quot;248&quot; x=&quot;358&quot; y=&quot;162&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;place-worker&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=5;whiteSpace=wrap;html=1;fillStyle=hatch;fillColor=#8c8c8c;hachureGap=9;hachureAngle=-45;sketch=0;jiggle=0;strokeColor=#1c1a17;strokeWidth=1.5;&quot; value=&quot;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;235&quot; width=&quot;275&quot; x=&quot;670&quot; y=&quot;20&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;place-worker-label&quot; parent=&quot;1&quot; style=&quot;text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;fontSize=15;fontColor=#1c1a17;labelBackgroundColor=#ffffff;spacingLeft=4;spacingRight=4;&quot; value=&quot;&amp;lt;u&amp;gt;&amp;lt;b&amp;gt;Worktree worker&amp;lt;/b&amp;gt;&amp;lt;/u&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;26&quot; width=&quot;145&quot; x=&quot;688&quot; y=&quot;34&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;op-build&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1c1a17;strokeWidth=1.5;fontFamily=Helvetica;fontSize=12;align=left;spacingLeft=12;fontColor=#1c1a17;&quot; value=&quot;edit repo, build &amp;amp;amp; security audit&amp;lt;br&amp;gt;&amp;lt;font color=&amp;quot;#666666&amp;quot; style=&amp;quot;font-size:11px;&amp;quot;&amp;gt;isolated child git worktree&amp;lt;/font&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;64&quot; width=&quot;238&quot; x=&quot;688&quot; y=&quot;76&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;op-push&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1c1a17;strokeWidth=1.5;fontFamily=Helvetica;fontSize=12;align=left;spacingLeft=12;fontColor=#1c1a17;&quot; value=&quot;push commits &amp;amp;amp; verify CI green&amp;lt;br&amp;gt;&amp;lt;font color=&amp;quot;#666666&amp;quot; style=&amp;quot;font-size:11px;&amp;quot;&amp;gt;owns PR #5 until ready to merge&amp;lt;/font&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;64&quot; width=&quot;238&quot; x=&quot;688&quot; y=&quot;162&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;c1&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;op-taste&quot; style=&quot;endArrow=block;endFill=1;strokeColor=#1c1a17;strokeWidth=1.5;&quot; target=&quot;op-coord&quot;&gt;&#10;          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;c2&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;op-vault&quot; style=&quot;endArrow=block;startArrow=block;endFill=1;startFill=1;strokeColor=#1c1a17;strokeWidth=1.5;&quot; target=&quot;op-coord&quot;&gt;&#10;          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;c3&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;op-coord&quot; style=&quot;endArrow=block;endFill=1;strokeColor=#1c1a17;strokeWidth=1.5;&quot; target=&quot;op-build&quot;&gt;&#10;          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;c4&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;op-build&quot; style=&quot;endArrow=block;endFill=1;strokeColor=#1c1a17;strokeWidth=1.5;&quot; target=&quot;op-push&quot;&gt;&#10;          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;c5&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;op-push&quot; style=&quot;endArrow=block;endFill=1;strokeColor=#1c1a17;strokeWidth=1.5;&quot; target=&quot;op-watch&quot;&gt;&#10;          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;risk-human&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillStyle=cross-hatch;fillColor=#8c8c8c;hachureGap=8;hachureAngle=-45;sketch=0;jiggle=0;strokeColor=#1c1a17;strokeWidth=1.5;fontFamily=Helvetica;fontSize=11.5;fontColor=#1c1a17;labelBackgroundColor=#ffffff;&quot; value=&quot;&amp;lt;i&amp;gt;Letting a model smooth prose erases your voice&amp;lt;/i&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;54&quot; width=&quot;275&quot; x=&quot;20&quot; y=&quot;290&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;risk-bot&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillStyle=cross-hatch;fillColor=#8c8c8c;hachureGap=8;hachureAngle=-45;sketch=0;jiggle=0;strokeColor=#1c1a17;strokeWidth=1.5;fontFamily=Helvetica;fontSize=11.5;fontColor=#1c1a17;labelBackgroundColor=#ffffff;&quot; value=&quot;&amp;lt;i&amp;gt;Worker handoff adds ceremony on 3-word edits (reach for Pi)&amp;lt;/i&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;54&quot; width=&quot;285&quot; x=&quot;340&quot; y=&quot;290&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;risk-worker&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillStyle=cross-hatch;fillColor=#8c8c8c;hachureGap=8;hachureAngle=-45;sketch=0;jiggle=0;strokeColor=#1c1a17;strokeWidth=1.5;fontFamily=Helvetica;fontSize=11.5;fontColor=#1c1a17;labelBackgroundColor=#ffffff;&quot; value=&quot;&amp;lt;i&amp;gt;Defaults to generic slate &amp;amp;amp; RGB icons unless constrained&amp;lt;/i&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;54&quot; width=&quot;275&quot; x=&quot;670&quot; y=&quot;290&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;d1&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;place-human&quot; style=&quot;endArrow=none;dashed=1;dashPattern=4 4;strokeColor=#1c1a17;strokeWidth=1.25;&quot; target=&quot;risk-human&quot;&gt;&#10;          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;d2&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;place-bot&quot; style=&quot;endArrow=none;dashed=1;dashPattern=4 4;strokeColor=#1c1a17;strokeWidth=1.25;&quot; target=&quot;risk-bot&quot;&gt;&#10;          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;d3&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;place-worker&quot; style=&quot;endArrow=none;dashed=1;dashPattern=4 4;strokeColor=#1c1a17;strokeWidth=1.25;&quot; target=&quot;risk-worker&quot;&gt;&#10;          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;key-lbl&quot; parent=&quot;1&quot; style=&quot;text;html=1;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=12;fontColor=#1c1a17;&quot; value=&quot;&amp;lt;b&amp;gt;Key&amp;lt;/b&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;24&quot; width=&quot;38&quot; x=&quot;20&quot; y=&quot;366&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;key-s1&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=20;fillStyle=hatch;fillColor=#8c8c8c;hachureGap=6;hachureAngle=-45;sketch=0;jiggle=0;strokeColor=#1c1a17;strokeWidth=1.25;&quot; value=&quot;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;20&quot; width=&quot;32&quot; x=&quot;62&quot; y=&quot;367&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;key-t1&quot; parent=&quot;1&quot; style=&quot;text;html=1;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=11.5;fontColor=#1c1a17;&quot; value=&quot;place: where custody lives&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;24&quot; width=&quot;165&quot; x=&quot;102&quot; y=&quot;365&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;key-s2&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=20;fillColor=#ffffff;strokeColor=#1c1a17;strokeWidth=1.25;&quot; value=&quot;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;20&quot; width=&quot;32&quot; x=&quot;280&quot; y=&quot;367&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;key-t2&quot; parent=&quot;1&quot; style=&quot;text;html=1;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=11.5;fontColor=#1c1a17;&quot; value=&quot;operation: what runs inside it&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;24&quot; width=&quot;180&quot; x=&quot;320&quot; y=&quot;365&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;key-s3&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=20;fillStyle=cross-hatch;fillColor=#8c8c8c;hachureGap=6;hachureAngle=-45;sketch=0;jiggle=0;strokeColor=#1c1a17;strokeWidth=1.25;&quot; value=&quot;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;20&quot; width=&quot;32&quot; x=&quot;515&quot; y=&quot;367&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;key-t3&quot; parent=&quot;1&quot; style=&quot;text;html=1;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=11.5;fontColor=#1c1a17;&quot; value=&quot;failure boundary to guard&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;24&quot; width=&quot;165&quot; x=&quot;555&quot; y=&quot;365&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;key-arr&quot; edge=&quot;1&quot; parent=&quot;1&quot; style=&quot;endArrow=block;endFill=1;strokeColor=#1c1a17;strokeWidth=1.5;&quot; value=&quot;&quot;&gt;&#10;          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;&gt;&#10;            &lt;mxPoint x=&quot;735&quot; y=&quot;377&quot; as=&quot;sourcePoint&quot; /&gt;&#10;            &lt;mxPoint x=&quot;770&quot; y=&quot;377&quot; as=&quot;targetPoint&quot; /&gt;&#10;          &lt;/mxGeometry&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;key-t4&quot; parent=&quot;1&quot; style=&quot;text;html=1;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=11.5;fontColor=#1c1a17;&quot; value=&quot;handoff: what triggers what&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;24&quot; width=&quot;170&quot; x=&quot;778&quot; y=&quot;365&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;      &lt;/root&gt;&#10;    &lt;/mxGraphModel&gt;&#10;  &lt;/diagram&gt;&#10;&lt;/mxfile&gt;&#10;"><defs><pattern patternUnits="userSpaceOnUse" width="9" height="9" x="0" y="0" id="bb-mx-pattern-hatch-150-_8c8c8c-_757575-100-900-75--4500-0" patternTransform="translate(0,0) rotate(45) scale(1)"><line x1="4.5" y1="0" x2="4.5" y2="9" stroke="#8c8c8c" stroke-width="0.75" style="stroke: light-dark(rgb(140, 140, 140), rgb(117, 117, 117));"/></pattern><pattern patternUnits="userSpaceOnUse" width="8" height="8" x="0" y="0" id="bb-mx-pattern-cross-hatch-150-_8c8c8c-_757575-100-800-75--4500-0" patternTransform="translate(0,0) rotate(45) scale(1)"><rect x="0" y="0" width="8" height="8" stroke="#8c8c8c" stroke-width="0.75" fill="none" style="stroke: light-dark(rgb(140, 140, 140), rgb(117, 117, 117));"/></pattern><pattern patternUnits="userSpaceOnUse" width="6" height="6" x="0" y="0" id="bb-mx-pattern-hatch-125-_8c8c8c-_757575-100-600-63--4500-0" patternTransform="translate(0,0) rotate(45) scale(1)"><line x1="3" y1="0" x2="3" y2="6" stroke="#8c8c8c" stroke-width="0.625" style="stroke: light-dark(rgb(140, 140, 140), rgb(117, 117, 117));"/></pattern><pattern patternUnits="userSpaceOnUse" width="6" height="6" x="0" y="0" id="bb-mx-pattern-cross-hatch-125-_8c8c8c-_757575-100-600-63--4500-0" patternTransform="translate(0,0) rotate(45) scale(1)"><rect x="0" y="0" width="6" height="6" stroke="#8c8c8c" stroke-width="0.625" fill="none" style="stroke: light-dark(rgb(140, 140, 140), rgb(117, 117, 117));"/></pattern></defs><g><g data-cell-id="0"><g data-cell-id="1"><g data-cell-id="place-human"><g><rect x="6" y="6" width="275" height="235" rx="11.75" ry="11.75" fill="url(#bb-mx-pattern-hatch-150-_8c8c8c-_757575-100-900-75--4500-0)" stroke="#1c1a17" stroke-width="1.5" pointer-events="all" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="place-human-label"><g><rect x="24" y="20" width="145" height="26" fill="none" stroke="none" pointer-events="all"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe flex-start; width: 135px; height: 1px; padding-top: 33px; margin-left: 30px;"><div style="box-sizing: border-box; font-size: 0; text-align: left; color: #1c1a17; background-color: #ffffff; "><div style="display: inline-block; font-size: 15px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; background-color: light-dark(#ffffff, #121212); white-space: normal; word-wrap: normal; "><u><b>You &amp; Obsidian</b></u></div></div></div></foreignObject><text x="30" y="38" fill="#1c1a17" font-family="Helvetica" font-size="15px" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));">You &amp; Obsidian</text></switch></g></g></g><g data-cell-id="op-taste"><g><rect x="24" y="62" width="238" height="64" rx="8.96" ry="8.96" fill="#ffffff" stroke="#1c1a17" stroke-width="1.5" pointer-events="all" style="fill: light-dark(rgb(255, 255, 255), rgb(18, 18, 18)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe flex-start; width: 224px; height: 1px; padding-top: 94px; margin-left: 38px;"><div style="box-sizing: border-box; font-size: 0; text-align: left; color: #1c1a17; "><div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">set appetite, problem &amp; taste<br /><span style="font-size: 11px; color: light-dark(rgb(102, 102, 102), rgb(149, 149, 149));">Gruvbox + Warm Paper, scope cuts</span></div></div></div></foreignObject><text x="38" y="91" fill="#1c1a17" font-family="Helvetica" font-size="12px" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"><tspan x="38" y="91">set appetite, problem &amp; taste</tspan><tspan x="38" y="105">Gruvbox + Warm Paper, scope cuts</tspan></text></switch></g></g></g><g data-cell-id="op-vault"><g><rect x="24" y="148" width="238" height="64" rx="8.96" ry="8.96" fill="#ffffff" stroke="#1c1a17" stroke-width="1.5" pointer-events="all" style="fill: light-dark(rgb(255, 255, 255), rgb(18, 18, 18)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe flex-start; width: 224px; height: 1px; padding-top: 180px; margin-left: 38px;"><div style="box-sizing: border-box; font-size: 0; text-align: left; color: #1c1a17; "><div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">keep pitches &amp; drafts in .md<br /><span style="font-size: 11px; color: light-dark(rgb(102, 102, 102), rgb(149, 149, 149));">durable outside any agent runtime</span></div></div></div></foreignObject><text x="38" y="177" fill="#1c1a17" font-family="Helvetica" font-size="12px" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"><tspan x="38" y="177">keep pitches &amp; drafts in .md</tspan><tspan x="38" y="191">durable outside any agent runtime</tspan></text></switch></g></g></g><g data-cell-id="place-bot"><g><rect x="326" y="6" width="285" height="235" rx="11.75" ry="11.75" fill="url(#bb-mx-pattern-hatch-150-_8c8c8c-_757575-100-900-75--4500-0)" stroke="#1c1a17" stroke-width="1.5" pointer-events="all" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="place-bot-label"><g><rect x="344" y="20" width="175" height="26" fill="none" stroke="none" pointer-events="all"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe flex-start; width: 165px; height: 1px; padding-top: 33px; margin-left: 350px;"><div style="box-sizing: border-box; font-size: 0; text-align: left; color: #1c1a17; background-color: #ffffff; "><div style="display: inline-block; font-size: 15px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; background-color: light-dark(#ffffff, #121212); white-space: normal; word-wrap: normal; "><u><b>Persistent bot (Orca)</b></u></div></div></div></foreignObject><text x="350" y="38" fill="#1c1a17" font-family="Helvetica" font-size="15px" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));">Persistent bot (Orca)</text></switch></g></g></g><g data-cell-id="op-coord"><g><rect x="344" y="62" width="248" height="64" rx="8.96" ry="8.96" fill="#ffffff" stroke="#1c1a17" stroke-width="1.5" pointer-events="all" style="fill: light-dark(rgb(255, 255, 255), rgb(18, 18, 18)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe flex-start; width: 234px; height: 1px; padding-top: 94px; margin-left: 358px;"><div style="box-sizing: border-box; font-size: 0; text-align: left; color: #1c1a17; "><div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">read repos, shape &amp; track items<br /><span style="font-size: 11px; color: light-dark(rgb(102, 102, 102), rgb(149, 149, 149));">MEMORY.md + bounded worker specs</span></div></div></div></foreignObject><text x="358" y="91" fill="#1c1a17" font-family="Helvetica" font-size="12px" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"><tspan x="358" y="91">read repos, shape &amp; track items</tspan><tspan x="358" y="105">MEMORY.md + bounded worker specs</tspan></text></switch></g></g></g><g data-cell-id="op-watch"><g><rect x="344" y="148" width="248" height="64" rx="8.96" ry="8.96" fill="#ffffff" stroke="#1c1a17" stroke-width="1.5" pointer-events="all" style="fill: light-dark(rgb(255, 255, 255), rgb(18, 18, 18)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe flex-start; width: 234px; height: 1px; padding-top: 180px; margin-left: 358px;"><div style="box-sizing: border-box; font-size: 0; text-align: left; color: #1c1a17; "><div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">run preview, mockups &amp; PR watch<br /><span style="font-size: 11px; color: light-dark(rgb(102, 102, 102), rgb(149, 149, 149));">localhost:5173 + event wake on #5</span></div></div></div></foreignObject><text x="358" y="177" fill="#1c1a17" font-family="Helvetica" font-size="12px" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"><tspan x="358" y="177">run preview, mockups &amp; PR watch</tspan><tspan x="358" y="191">localhost:5173 + event wake on #5</tspan></text></switch></g></g></g><g data-cell-id="place-worker"><g><rect x="656" y="6" width="275" height="235" rx="11.75" ry="11.75" fill="url(#bb-mx-pattern-hatch-150-_8c8c8c-_757575-100-900-75--4500-0)" stroke="#1c1a17" stroke-width="1.5" pointer-events="all" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="place-worker-label"><g><rect x="674" y="20" width="145" height="26" fill="none" stroke="none" pointer-events="all"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe flex-start; width: 135px; height: 1px; padding-top: 33px; margin-left: 680px;"><div style="box-sizing: border-box; font-size: 0; text-align: left; color: #1c1a17; background-color: #ffffff; "><div style="display: inline-block; font-size: 15px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; background-color: light-dark(#ffffff, #121212); white-space: normal; word-wrap: normal; "><u><b>Worktree worker</b></u></div></div></div></foreignObject><text x="680" y="38" fill="#1c1a17" font-family="Helvetica" font-size="15px" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));">Worktree worker</text></switch></g></g></g><g data-cell-id="op-build"><g><rect x="674" y="62" width="238" height="64" rx="8.96" ry="8.96" fill="#ffffff" stroke="#1c1a17" stroke-width="1.5" pointer-events="all" style="fill: light-dark(rgb(255, 255, 255), rgb(18, 18, 18)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe flex-start; width: 224px; height: 1px; padding-top: 94px; margin-left: 688px;"><div style="box-sizing: border-box; font-size: 0; text-align: left; color: #1c1a17; "><div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">edit repo, build &amp; security audit<br /><span style="font-size: 11px; color: light-dark(rgb(102, 102, 102), rgb(149, 149, 149));">isolated child git worktree</span></div></div></div></foreignObject><text x="688" y="91" fill="#1c1a17" font-family="Helvetica" font-size="12px" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"><tspan x="688" y="91">edit repo, build &amp; security audit</tspan><tspan x="688" y="105">isolated child git worktree</tspan></text></switch></g></g></g><g data-cell-id="op-push"><g><rect x="674" y="148" width="238" height="64" rx="8.96" ry="8.96" fill="#ffffff" stroke="#1c1a17" stroke-width="1.5" pointer-events="all" style="fill: light-dark(rgb(255, 255, 255), rgb(18, 18, 18)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe flex-start; width: 224px; height: 1px; padding-top: 180px; margin-left: 688px;"><div style="box-sizing: border-box; font-size: 0; text-align: left; color: #1c1a17; "><div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">push commits &amp; verify CI green<br /><span style="font-size: 11px; color: light-dark(rgb(102, 102, 102), rgb(149, 149, 149));">owns PR #5 until ready to merge</span></div></div></div></foreignObject><text x="688" y="177" fill="#1c1a17" font-family="Helvetica" font-size="12px" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"><tspan x="688" y="177">push commits &amp; verify CI green</tspan><tspan x="688" y="191">owns PR #5 until ready to merge</tspan></text></switch></g></g></g><g data-cell-id="c1"><g><path d="M 262 94 L 334.82 94" fill="none" stroke="#1c1a17" stroke-width="1.5" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/><path d="M 342.32 94 L 334.82 97.75 L 334.82 90.25 Z" fill="#1c1a17" stroke="#1c1a17" stroke-width="1.5" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="c2"><g><path d="M 270.87 146.16 L 338.2 128.35" fill="none" stroke="#1c1a17" stroke-width="1.5" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/><path d="M 263.62 148.08 L 269.91 142.54 L 271.83 149.79 Z" fill="#1c1a17" stroke="#1c1a17" stroke-width="1.5" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/><path d="M 345.45 126.43 L 339.16 131.97 L 337.24 124.72 Z" fill="#1c1a17" stroke="#1c1a17" stroke-width="1.5" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="c3"><g><path d="M 592 94 L 664.82 94" fill="none" stroke="#1c1a17" stroke-width="1.5" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/><path d="M 672.32 94 L 664.82 97.75 L 664.82 90.25 Z" fill="#1c1a17" stroke="#1c1a17" stroke-width="1.5" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="c4"><g><path d="M 793 126 L 793 138.82" fill="none" stroke="#1c1a17" stroke-width="1.5" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/><path d="M 793 146.32 L 789.25 138.82 L 796.75 138.82 Z" fill="#1c1a17" stroke="#1c1a17" stroke-width="1.5" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="c5"><g><path d="M 674 180 L 601.18 180" fill="none" stroke="#1c1a17" stroke-width="1.5" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/><path d="M 593.68 180 L 601.18 176.25 L 601.18 183.75 Z" fill="#1c1a17" stroke="#1c1a17" stroke-width="1.5" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="risk-human"><g><rect x="6" y="276" width="275" height="54" rx="7.56" ry="7.56" fill="url(#bb-mx-pattern-cross-hatch-150-_8c8c8c-_757575-100-800-75--4500-0)" stroke="#1c1a17" stroke-width="1.5" pointer-events="all" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 273px; height: 1px; padding-top: 303px; margin-left: 7px;"><div style="box-sizing: border-box; font-size: 0; text-align: center; color: #1c1a17; background-color: #ffffff; "><div style="display: inline-block; font-size: 11.5px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; background-color: light-dark(#ffffff, #121212); white-space: normal; word-wrap: normal; "><i>Letting a model smooth prose erases your voice</i></div></div></div></foreignObject><text x="144" y="306" fill="#1c1a17" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));">Letting a model smooth prose erases your voice</text></switch></g></g></g><g data-cell-id="risk-bot"><g><rect x="326" y="276" width="285" height="54" rx="7.56" ry="7.56" fill="url(#bb-mx-pattern-cross-hatch-150-_8c8c8c-_757575-100-800-75--4500-0)" stroke="#1c1a17" stroke-width="1.5" pointer-events="all" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 283px; height: 1px; padding-top: 303px; margin-left: 327px;"><div style="box-sizing: border-box; font-size: 0; text-align: center; color: #1c1a17; background-color: #ffffff; "><div style="display: inline-block; font-size: 11.5px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; background-color: light-dark(#ffffff, #121212); white-space: normal; word-wrap: normal; "><i>Worker handoff adds ceremony on 3-word edits (reach for Pi)</i></div></div></div></foreignObject><text x="469" y="299" fill="#1c1a17" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"><tspan x="469" y="299">Worker handoff adds ceremony on 3-word edits (reach</tspan><tspan x="469" y="313">for Pi)</tspan></text></switch></g></g></g><g data-cell-id="risk-worker"><g><rect x="656" y="276" width="275" height="54" rx="7.56" ry="7.56" fill="url(#bb-mx-pattern-cross-hatch-150-_8c8c8c-_757575-100-800-75--4500-0)" stroke="#1c1a17" stroke-width="1.5" pointer-events="all" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 273px; height: 1px; padding-top: 303px; margin-left: 657px;"><div style="box-sizing: border-box; font-size: 0; text-align: center; color: #1c1a17; background-color: #ffffff; "><div style="display: inline-block; font-size: 11.5px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; background-color: light-dark(#ffffff, #121212); white-space: normal; word-wrap: normal; "><i>Defaults to generic slate &amp; RGB icons unless constrained</i></div></div></div></foreignObject><text x="794" y="299" fill="#1c1a17" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"><tspan x="794" y="299">Defaults to generic slate &amp; RGB icons unless</tspan><tspan x="794" y="313">constrained</tspan></text></switch></g></g></g><g data-cell-id="d1"><g transform="translate(0.5,0.5)"><path d="M 143.5 241 L 143.5 276" fill="none" stroke="#1c1a17" stroke-width="1.25" stroke-miterlimit="10" stroke-dasharray="5 5" pointer-events="stroke" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="d2"><g transform="translate(0.5,0.5)"><path d="M 468.5 241 L 468.5 276" fill="none" stroke="#1c1a17" stroke-width="1.25" stroke-miterlimit="10" stroke-dasharray="5 5" pointer-events="stroke" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="d3"><g transform="translate(0.5,0.5)"><path d="M 793.5 241 L 793.5 276" fill="none" stroke="#1c1a17" stroke-width="1.25" stroke-miterlimit="10" stroke-dasharray="5 5" pointer-events="stroke" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="key-lbl"><g><rect x="6" y="352" width="38" height="24" fill="none" stroke="none" pointer-events="all"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe flex-start; width: 1px; height: 1px; padding-top: 364px; margin-left: 8px;"><div style="box-sizing: border-box; font-size: 0; text-align: left; color: #1c1a17; "><div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: nowrap; "><b>Key</b></div></div></div></foreignObject><text x="8" y="368" fill="#1c1a17" font-family="Helvetica" font-size="12px" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));">Key</text></switch></g></g></g><g data-cell-id="key-s1"><g transform="translate(0.5,0.5)"><rect x="48" y="353" width="32" height="20" rx="4" ry="4" fill="url(#bb-mx-pattern-hatch-125-_8c8c8c-_757575-100-600-63--4500-0)" stroke="#1c1a17" stroke-width="1.25" pointer-events="all" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="key-t1"><g><rect x="88" y="351" width="165" height="24" fill="none" stroke="none" pointer-events="all"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe flex-start; width: 1px; height: 1px; padding-top: 363px; margin-left: 90px;"><div style="box-sizing: border-box; font-size: 0; text-align: left; color: #1c1a17; "><div style="display: inline-block; font-size: 11.5px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: nowrap; ">place: where custody lives</div></div></div></foreignObject><text x="90" y="366" fill="#1c1a17" font-family="Helvetica" font-size="12px" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));">place: where custody lives</text></switch></g></g></g><g data-cell-id="key-s2"><g transform="translate(0.5,0.5)"><rect x="266" y="353" width="32" height="20" rx="4" ry="4" fill="#ffffff" stroke="#1c1a17" stroke-width="1.25" pointer-events="all" style="fill: light-dark(rgb(255, 255, 255), rgb(18, 18, 18)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="key-t2"><g><rect x="306" y="351" width="180" height="24" fill="none" stroke="none" pointer-events="all"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe flex-start; width: 1px; height: 1px; padding-top: 363px; margin-left: 308px;"><div style="box-sizing: border-box; font-size: 0; text-align: left; color: #1c1a17; "><div style="display: inline-block; font-size: 11.5px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: nowrap; ">operation: what runs inside it</div></div></div></foreignObject><text x="308" y="366" fill="#1c1a17" font-family="Helvetica" font-size="12px" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));">operation: what runs inside it</text></switch></g></g></g><g data-cell-id="key-s3"><g transform="translate(0.5,0.5)"><rect x="501" y="353" width="32" height="20" rx="4" ry="4" fill="url(#bb-mx-pattern-cross-hatch-125-_8c8c8c-_757575-100-600-63--4500-0)" stroke="#1c1a17" stroke-width="1.25" pointer-events="all" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="key-t3"><g><rect x="541" y="351" width="165" height="24" fill="none" stroke="none" pointer-events="all"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe flex-start; width: 1px; height: 1px; padding-top: 363px; margin-left: 543px;"><div style="box-sizing: border-box; font-size: 0; text-align: left; color: #1c1a17; "><div style="display: inline-block; font-size: 11.5px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: nowrap; ">failure boundary to guard</div></div></div></foreignObject><text x="543" y="366" fill="#1c1a17" font-family="Helvetica" font-size="12px" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));">failure boundary to guard</text></switch></g></g></g><g data-cell-id="key-arr"><g><path d="M 721 363 L 746.82 363" fill="none" stroke="#1c1a17" stroke-width="1.5" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/><path d="M 754.32 363 L 746.82 366.75 L 746.82 359.25 Z" fill="#1c1a17" stroke="#1c1a17" stroke-width="1.5" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="key-t4"><g><rect x="764" y="351" width="170" height="24" fill="none" stroke="none" pointer-events="all"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe flex-start; width: 1px; height: 1px; padding-top: 363px; margin-left: 766px;"><div style="box-sizing: border-box; font-size: 0; text-align: left; color: #1c1a17; "><div style="display: inline-block; font-size: 11.5px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: nowrap; ">handoff: what triggers what</div></div></div></foreignObject><text x="766" y="366" fill="#1c1a17" font-family="Helvetica" font-size="12px" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));">handoff: what triggers what</text></switch></g></g></g></g></g></g><switch><g requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"/><a transform="translate(0,-5)" xlink:href="https://www.drawio.com/doc/faq/svg-export-text-problems" target="_blank"><text text-anchor="middle" font-size="10px" x="50%" y="100%">Text is not SVG - cannot display</text></a></switch></svg>
+        <div class="diagram-caption">
+          <span>Figure 2 · System breadboard (draw.io SVG · places, operations &amp; failure boundaries)</span>
+          <span id="bb-step-indicator">All places &amp; boundaries active</span>
+        </div>
+      </div>
+
+      <div class="step-detail">
+        <div class="step-detail-top">
+          <div class="step-detail-title" id="sd-title">Full system: three places, explicit handoffs</div>
+          <div class="step-detail-sha" id="sd-sha">scaryponens.github.io · Nov 24, 2026</div>
+        </div>
+        <div class="step-cols">
+          <div class="step-col">
+            <h4>What you owned</h4>
+            <p id="sd-human">Appetite (two-week small batch), the core problem story, visual taste, what to cut or archive, and when to merge—with zero manual terminal commands.</p>
+          </div>
+          <div class="step-col">
+            <h4>What the bot &amp; worker owned</h4>
+            <p id="sd-machine">Breeze read the repos, wrote the shaped pitch to Obsidian, spawned a child worktree worker for PR #5, ran the local preview, and watched CI.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <hr class="rule" id="bench" />
+
+    <!-- SECTION 03 -->
+    <section>
+      <div class="kicker">03 / Three Tools, Three Jobs</div>
+      <h2 class="sec-title">Why Pi and Obsidian stay on the bench.</h2>
+
+      <div class="prose">
+        <p>
+          Adding a persistent coordinator did not replace <code>Pi</code> or <code>Obsidian</code>. It stopped forcing one tool to impersonate the other two. Each stays sharp because its boundary is narrow.
+        </p>
+      </div>
+
+      <div class="bench-cards">
+        <div class="bench-row">
+          <div>
+            <span class="bench-name">
+              <svg class="tool-glyph" viewBox="2.8 4 19 15.5" width="18" height="15" fill="currentColor" aria-hidden="true">
+                <path d="M3.4 16.9c1.2-1.2 2.4-1.3 4.2-1 1.7.3 3.3-.2 4.3-1.4L14.2 5.4c.12-.45.55-.38.46.08l-1.95 9.95c-.12.6-.55.98-1.18 1.12-2.6.58-5.7.68-8.13.35Z" />
+                <path d="M12.1 18.8 14.3 11.4c.85-2.85 3.45-4.55 6.85-4.35.42.02.52.42.18.68-1.15.88-2.45 1.55-3.85 2.15-1.55.66-2.65 1.95-3.55 4.25l-1.42 4.72c-.12.38-.52.32-.41-.05Z" />
+                <ellipse cx="17.1" cy="5.2" rx="1.75" ry="0.72" transform="rotate(-10 17.1 5.2)" />
+              </svg>
+              Orca
+            </span>
+            <span class="bench-role">Coordinator &amp; worktrees</span>
+          </div>
+          <div class="bench-spec">
+            <div><strong>Job:</strong> Persistent bot home (<code>SOUL.md</code>, <code>MEMORY.md</code>, items, event watches) that dispatches disposable repo workers in isolated git worktrees.</div>
+            <div><strong>Invariant:</strong> Never merges or publishes unasked; workers own PR checks until green, then release.</div>
+          </div>
+        </div>
+
+        <div class="bench-row">
+          <div>
+            <span class="bench-name">
+              <svg class="tool-glyph" viewBox="0 0 4 4" width="15" height="15" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true">
+                <rect x="0" y="0" width="3" height="1" opacity="1" />
+                <rect x="2" y="1" width="1" height="1" opacity="1" />
+                <rect x="0" y="1" width="1" height="3" opacity="0.6" />
+                <rect x="1" y="2" width="1" height="1" opacity="0.6" />
+                <rect x="3" y="2" width="1" height="2" opacity="0.8" />
+              </svg>
+              Pi
+            </span>
+            <span class="bench-role">Direct coding harness</span>
+          </div>
+          <div class="bench-spec">
+            <div><strong>Job:</strong> Fast, programmable in-terminal agent when you want your own hands directly on one hard module, tight loop, or three-word fix.</div>
+            <div><strong>Invariant:</strong> Session-scoped on purpose—no background daemon ceremony when direct manipulation is faster.</div>
+          </div>
+        </div>
+
+        <div class="bench-row">
+          <div>
+            <span class="bench-name">
+              <svg class="tool-glyph" viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true">
+                <path d="M19.355 18.538a68.967 68.959 0 0 0 1.858-2.954.81.81 0 0 0-.062-.9c-.516-.685-1.504-2.075-2.042-3.362-.553-1.321-.636-3.375-.64-4.377a1.707 1.707 0 0 0-.358-1.05l-3.198-4.064a3.744 3.744 0 0 1-.076.543c-.106.503-.307 1.004-.536 1.5-.134.29-.29.6-.446.914l-.31.626c-.516 1.068-.997 2.227-1.132 3.59-.124 1.26.046 2.73.815 4.481.128.011.257.025.386.044a6.363 6.363 0 0 1 3.326 1.505c.916.79 1.744 1.922 2.415 3.5zM8.199 22.569c.073.012.146.02.22.02.78.024 2.095.092 3.16.29.87.16 2.593.64 4.01 1.055 1.083.316 2.198-.548 2.355-1.664.114-.814.33-1.735.725-2.58l-.01.005c-.67-1.87-1.522-3.078-2.416-3.849a5.295 5.295 0 0 0-2.778-1.257c-1.54-.216-2.952.19-3.84.45.532 2.218.368 4.829-1.425 7.531zM5.533 9.938c-.023.1-.056.197-.098.29L2.82 16.059a1.602 1.602 0 0 0 .313 1.772l4.116 4.24c2.103-3.101 1.796-6.02.836-8.3-.728-1.73-1.832-3.081-2.55-3.831zM9.32 14.01c.615-.183 1.606-.465 2.745-.534-.683-1.725-.848-3.233-.716-4.577.154-1.552.7-2.847 1.235-3.95.113-.235.223-.454.328-.664.149-.297.288-.577.419-.86.217-.47.379-.885.46-1.27.08-.38.08-.72-.014-1.043-.095-.325-.297-.675-.68-1.06a1.6 1.6 0 0 0-1.475.36l-4.95 4.452a1.602 1.602 0 0 0-.513.952l-.427 2.83c.672.59 2.328 2.316 3.335 4.711.09.21.175.43.253.653z"/>
+              </svg>
+              Obsidian
+            </span>
+            <span class="bench-role">Durable working memory</span>
+          </div>
+          <div class="bench-spec">
+            <div><strong>Job:</strong> Plain local Markdown pitches, claims, and drafts that outlive every chat window, model swap, or agent harness.</div>
+            <div><strong>Invariant:</strong> The file holds the shaped state, not the chat scrollback.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <hr class="rule" id="bites" />
+
+    <!-- SECTION 04 -->
+    <section>
+      <div class="kicker">04 / Where It Still Bites</div>
+      <h2 class="sec-title">Three failure modes from the same morning.</h2>
+
+      <div class="prose">
+        <p>
+          Delegating coordination removes terminal babysitting, not judgment. Every cross-hatched box at the bottom of Figure 2 bit at least once during this build:
+        </p>
+        <p>
+          <strong>1. Default-template gravity.</strong> Left unguided, the worker's first pass shipped cold Tailwind blue-gray slate and later rendered boxed, multi-colored badges that clashed with an ink-on-paper page (<code>7e4b6f2</code>). Taste cannot be delegated. Showing inline mockups in chat and enforcing Gruvbox Dark Medium, Warm Paper, and monochrome <code>currentColor</code> glyphs (<code>cd0ff58</code>) fixed it in one pass—only because a human looked at the rendered page and said no.
+        </p>
+        <p>
+          <strong>2. The ghostwriting trap.</strong> When a coordinator already holds your project notes, letting it polish or expand your prose is effortless—and fatal. Automated prose reads like every other model output on the internet. The rule that kept the site honest was binary: agents build pipelines, diagrams, and previews; prose under your name stays yours.
+        </p>
+        <p>
+          <strong>3. Dispatch ceremony on tiny edits.</strong> Spawning or reopening a supervised worktree worker, running a full audit, and watching CI makes sense for a multi-file change. For fixing a typo in one local file, opening <code>Pi</code> directly in the directory still wins.
+        </p>
+      </div>
+    </section>
+
+    <hr class="rule" id="check" />
+
+    <!-- SECTION 05 -->
+    <section>
+      <div class="kicker">05 / Check Yourself</div>
+      <h2 class="sec-title">Which job are you hiring for?</h2>
+
+      <div class="prose">
+        <p>
+          Pick the primary surface you would reach for on each task below to test the boundary.
+        </p>
+      </div>
+
+      <div class="quiz-list">
+        <div class="quiz-card" data-answer="orca">
+          <div class="quiz-q">1. Turn a shaped pitch into a feature branch, run a local preview server, fix two audit warnings, and wake you only when PR checks pass.</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-choice="pi" onclick="pickQuiz(this, 'pi')">Pi directly</button>
+            <button class="quiz-opt" data-choice="orca" onclick="pickQuiz(this, 'orca')">Orca bot + worktree worker</button>
+            <button class="quiz-opt" data-choice="obsidian" onclick="pickQuiz(this, 'obsidian')">Obsidian</button>
+            <button class="quiz-opt" data-choice="you" onclick="pickQuiz(this, 'you')">You, without agents</button>
+          </div>
+          <div class="quiz-explain" data-right="<strong>Orca bot + worktree worker.</strong> The work crosses branch setup, build/audit loops, preview hosting, and asynchronous CI waiting—exact places where a coordinator saves you from babysitting terminals."></div>
+        </div>
+
+        <div class="quiz-card" data-answer="pi">
+          <div class="quiz-q">2. Pair interactively for 25 minutes inside one tricky parser module where every test failure changes the next design choice.</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-choice="pi" onclick="pickQuiz(this, 'pi')">Pi directly</button>
+            <button class="quiz-opt" data-choice="orca" onclick="pickQuiz(this, 'orca')">Orca bot + worktree worker</button>
+            <button class="quiz-opt" data-choice="obsidian" onclick="pickQuiz(this, 'obsidian')">Obsidian</button>
+            <button class="quiz-opt" data-choice="you" onclick="pickQuiz(this, 'you')">You, without agents</button>
+          </div>
+          <div class="quiz-explain" data-right="<strong>Pi directly.</strong> Tight, synchronous exploration inside one codebase has no cross-surface state to coordinate; removing the middle layer keeps the feedback loop immediate."></div>
+        </div>
+
+        <div class="quiz-card" data-answer="you">
+          <div class="quiz-q">3. Decide whether a feature is worth two weeks or two hours—and write the three sentences explaining why you believe an approach works.</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-choice="pi" onclick="pickQuiz(this, 'pi')">Pi directly</button>
+            <button class="quiz-opt" data-choice="orca" onclick="pickQuiz(this, 'orca')">Orca bot + worktree worker</button>
+            <button class="quiz-opt" data-choice="obsidian" onclick="pickQuiz(this, 'obsidian')">Obsidian</button>
+            <button class="quiz-opt" data-choice="you" onclick="pickQuiz(this, 'you')">You, recorded in Obsidian</button>
+          </div>
+          <div class="quiz-explain" data-right="<strong>You, recorded in Obsidian.</strong> Appetite is a spending decision, not an estimate, and voice is the only reason anyone visits a personal site instead of asking a model directly."></div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="foot">
+      <span>Have a counterpoint or a sharper boundary? Reply on <a href="https://www.linkedin.com/in/reubenpeterpaul/" target="_blank" rel="noopener noreferrer">LinkedIn</a> or by <a href="mailto:reuben.peterpaul@protonmail.com">email</a>.</span>
+      <span><a href="/">← Back to reubenpeterpaul.com</a></span>
+    </footer>
+  </main>
+
+  <script>
+    function toggleTheme() {
+      var root = document.documentElement;
+      var isDark = root.classList.toggle('dark');
+      try { localStorage.setItem('darkMode', isDark ? 'true' : 'false'); } catch (e) {}
+    }
+
+    /* Topology interactive filter */
+    var leftCells = ['left-frame','left-title','l-repos','l-vault','l-you','l-cli','l-preview','le1','le2','le3','le4'];
+    var rightCells = ['right-frame','right-title','r-you','r-bot','r-vault','r-worker','r-ci','re1','re2','re3','re4'];
+
+    var topoCopy = {
+      both: {
+        status: 'Showing both topologies',
+        mem: '<strong>CLI alone:</strong> Re-explained per terminal.<br><strong>With bot:</strong> Held in <code>MEMORY.md</code> &amp; Obsidian.',
+        iso: '<strong>CLI alone:</strong> You manage branches &amp; tabs.<br><strong>With bot:</strong> Disposable child git worktrees.',
+        wait: '<strong>CLI alone:</strong> You poll or keep tabs open.<br><strong>With bot:</strong> Event wake on PR check or review.'
+      },
+      cli: {
+        status: 'Highlighting A · Single-session CLI alone',
+        mem: '<strong>In your head.</strong> Closing the terminal drops the cross-repo reasoning behind the change.',
+        iso: '<strong>Manual.</strong> Switching branches or running a second spike means juggling tabs and stashes yourself.',
+        wait: '<strong>Human polling.</strong> You watch GitHub Actions and copy failure logs back into the prompt.'
+      },
+      coord: {
+        status: 'Highlighting B · Persistent coordinator + disposable workers',
+        mem: '<strong>Durable.</strong> Standing preferences stay in <code>MEMORY.md</code>; shaped pitches stay in Obsidian.',
+        iso: '<strong>Scoped per task.</strong> Each worker gets a clean child git worktree and closes when settled.',
+        wait: '<strong>Event-driven.</strong> One-shot PR watches wake the coordinator only when CI or review state changes.'
+      }
+    };
+
+    function setTopology(mode, btn) {
+      document.querySelectorAll('[aria-label="Custody comparison"] .seg-btn').forEach(function(b) {
+        b.classList.remove('active');
+      });
+      if (btn) btn.classList.add('active');
+
+      var svg = document.getElementById('svg-topology');
+      leftCells.concat(rightCells).forEach(function(id) {
+        var el = svg.querySelector('[data-cell-id="' + id + '"]');
+        if (!el) return;
+        var dim = (mode === 'cli' && rightCells.indexOf(id) !== -1) ||
+                  (mode === 'coord' && leftCells.indexOf(id) !== -1);
+        el.classList.toggle('is-dimmed', dim);
+      });
+
+      var c = topoCopy[mode];
+      document.getElementById('topo-status').textContent = c.status;
+      document.getElementById('c-mem').innerHTML = c.mem;
+      document.getElementById('c-iso').innerHTML = c.iso;
+      document.getElementById('c-wait').innerHTML = c.wait;
+    }
+
+    /* Session Breadboard 6-step scrubber */
+    var allBbCells = [
+      'place-human','place-human-label','op-taste','op-vault',
+      'place-bot','place-bot-label','op-coord','op-watch',
+      'place-worker','place-worker-label','op-build','op-push',
+      'c1','c2','c3','c4','c5',
+      'risk-human','risk-bot','risk-worker','d1','d2','d3'
+    ];
+
+    var steps = [
+      {
+        indicator: 'All places & boundaries active',
+        title: 'Full system: three places, explicit handoffs',
+        sha: 'scaryponens.github.io · Nov 24, 2026',
+        active: allBbCells,
+        human: 'Appetite (two-week small batch), the core problem story, visual taste, what to cut or archive, and when to merge—with zero manual terminal commands.',
+        machine: 'Breeze read the repos, wrote the shaped pitch to Obsidian, spawned a child worktree worker for PR #5, ran the local preview, and watched CI.'
+      },
+      {
+        indicator: 'Step 01 · Shaping into Obsidian',
+        title: '01 · Port shape-pitch & bound the bet in Obsidian',
+        sha: 'my-pi-config → Obsidian .md',
+        active: ['place-human','place-human-label','op-taste','op-vault','place-bot','place-bot-label','op-coord','c1','c2','risk-human','d1'],
+        human: 'Picked the two-week small-batch appetite, chose the core failure story, and set the hard rule: zero AI-ghostwritten prose on the site.',
+        machine: 'Ported shape-pitch from my-pi-config into Antigravity, inspected scaryponens.github.io via gh, and wrote the agreed Shape Up pitch into Obsidian.'
+      },
+      {
+        indicator: 'Step 02 · Isolated worktree build',
+        title: '02 · Dispatch a disposable worker in a child worktree',
+        sha: 'PR #5 opened · commit 30a8fd2',
+        active: ['place-bot','place-bot-label','op-coord','place-worker','place-worker-label','op-build','op-push','c3','c4'],
+        human: 'Said "hand this to a worker" once the pitch looked right—no branch setup, npm install, or file hunting.',
+        machine: 'Created child git worktree radar-field-notebook, built build-radar.js + build-now.js + unified RSS, resolved 7 npm audit vulnerabilities, and opened PR #5.'
+      },
+      {
+        indicator: 'Step 03 · Managed preview & PR watch',
+        title: '03 · Spin up localhost:5173 & arm an event-only PR watch',
+        sha: 'localhost:5173 + PR #5 watch',
+        active: ['place-bot','place-bot-label','op-watch','place-worker','place-worker-label','op-push','c5'],
+        human: 'Asked to see PR #5 running locally before deciding on layout or copy.',
+        machine: 'Started Vite in a managed worktree terminal, opened localhost:5173 in an Orca browser tab, and armed a one-shot GitHub watch on PR #5.'
+      },
+      {
+        indicator: 'Step 04 · Catching default-template gravity',
+        title: '04 · Push back on default slate & RGB badge icons',
+        sha: 'commits e4ff18e → 7e4b6f2 → cd0ff58',
+        active: ['place-human','place-human-label','op-taste','place-bot','place-bot-label','op-coord','op-watch','place-worker','place-worker-label','op-build','c1','c3','risk-worker','d3'],
+        human: 'Rejected cold Tailwind slate for Gruvbox Dark Medium + Warm Paper + editorial serif, then caught boxed/RGB tool icons ("I still see the colored PNGs").',
+        machine: 'Rendered interactive HTML mockups inline in chat first, then dispatched the worker to apply the typography system and strip both marks down to pure currentColor ink.'
+      },
+      {
+        indicator: 'Step 05 · Scope cuts & archiving',
+        title: '05 · Strip the applause widget & archive old posts',
+        sha: 'commits c6fd55a & e7cf52c',
+        active: ['place-human','place-human-label','op-taste','place-bot','place-bot-label','op-coord','place-worker','place-worker-label','op-build','op-push','c1','c3','c4'],
+        human: 'Cut the legacy Supabase applause button and archived all 10 older posts plus OCPP/ETS projects, leaving "wow, such empty." under Field Notes.',
+        machine: 'Reopened the settled worker in place; removed Supabase/FontAwesome across scripts and CI workflows, moved old markdown to archive/, and verified clean dist/ output.'
+      },
+      {
+        indicator: 'Step 06 · Merge, release & quick follow-up',
+        title: '06 · Squash-merge PR #5, release preview, ship follow-up',
+        sha: 'PR #5 merged + commit db73b46',
+        active: ['place-human','place-human-label','op-taste','place-bot','place-bot-label','op-watch','place-worker','place-worker-label','op-push','c5','risk-bot','d2'],
+        human: 'Gave the word to merge PR #5, then asked for one quick follow-up adding Obsidian to the Now bench.',
+        machine: 'Squashed PR #5, closed the preview terminal and PR watch, pushed db73b46 with Obsidian’s monochrome glyph, and verified GitHub Pages deployment—while noting that tiny 1-line local edits are the boundary where Pi directly is faster.'
+      }
+    ];
+
+    function setStep(idx, btn) {
+      document.querySelectorAll('.step-pill').forEach(function(b) { b.classList.remove('active'); });
+      if (btn) btn.classList.add('active');
+
+      var s = steps[idx];
+      var svg = document.getElementById('svg-breadboard');
+      allBbCells.forEach(function(id) {
+        var el = svg.querySelector('[data-cell-id="' + id + '"]');
+        if (!el) return;
+        el.classList.toggle('is-dimmed', s.active.indexOf(id) === -1);
+      });
+
+      document.getElementById('bb-step-indicator').textContent = s.indicator;
+      document.getElementById('sd-title').textContent = s.title;
+      document.getElementById('sd-sha').textContent = s.sha;
+      document.getElementById('sd-human').textContent = s.human;
+      document.getElementById('sd-machine').textContent = s.machine;
+    }
+
+    /* Self-check quiz */
+    function pickQuiz(btn, choice) {
+      var card = btn.closest('.quiz-card');
+      var answer = card.getAttribute('data-answer');
+      card.querySelectorAll('.quiz-opt').forEach(function(b) {
+        b.classList.remove('picked-right', 'picked-other');
+      });
+      var exp = card.querySelector('.quiz-explain');
+      if (choice === answer) {
+        btn.classList.add('picked-right');
+        exp.innerHTML = '✓ ' + exp.getAttribute('data-right');
+      } else {
+        btn.classList.add('picked-other');
+        var rightBtn = card.querySelector('.quiz-opt[data-choice="' + answer + '"]');
+        if (rightBtn) rightBtn.classList.add('picked-right');
+        exp.innerHTML = 'Not quite — ' + exp.getAttribute('data-right');
+      }
+      exp.classList.add('visible');
+    }
+  </script>
+</body>
+</html>
