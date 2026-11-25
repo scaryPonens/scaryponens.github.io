@@ -320,7 +320,7 @@ export async function buildThoughts() {
       console.log(`✓ Generated: ${entry.filename}`)
     }
 
-    blogManifest.sort((a, b) => b.date.localeCompare(a.date) || a.title.localeCompare(b.title))
+    blogManifest.sort((a, b) => b.date.localeCompare(a.date) || b.slug.localeCompare(a.slug))
 
     const manifestJson = JSON.stringify(blogManifest, null, 2)
     await writeFile(join(outputDir, 'manifest.json'), manifestJson, 'utf-8')
