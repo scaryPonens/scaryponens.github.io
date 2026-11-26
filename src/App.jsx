@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import Header from './components/Header'
+import Hero3D from './components/Hero3D'
 import Now from './components/Now'
 import Radar from './components/Radar'
 import BlogList from './components/BlogList'
@@ -19,8 +19,8 @@ function App() {
 
   return (
     <div className="app">
+      <Hero3D />
       <div className="content">
-        <Header />
         <main>
           <Now />
           <Radar />

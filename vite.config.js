@@ -78,4 +78,16 @@ export default defineConfig({
   define: {
     __BUILD_ID__: JSON.stringify(Date.now().toString(36)),
   },
+  build: {
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/three')) {
+            return 'three-core'
+          }
+        },
+      },
+    },
+  },
 })
