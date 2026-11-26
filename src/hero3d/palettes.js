@@ -4,6 +4,7 @@ import {
   MeshBasicMaterial,
   MeshLambertMaterial,
 } from 'three'
+import { createVoltusMugTexture, updateVoltusMugTexture } from './voltusLogoSvg'
 
 export const PALETTES = {
   dark: {
@@ -104,6 +105,20 @@ export function createThemeMaterials(initialDark) {
     }),
   }
 
+  if (typeof document !== 'undefined') {
+    const voltusTex = createVoltusMugTexture(initialDark)
+    materials._voltusTex = voltusTex
+    materials.voltusDecal = new MeshBasicMaterial({
+      map: voltusTex.texture,
+      transparent: true,
+      opacity: 0.92,
+      depthWrite: false,
+      polygonOffset: true,
+      polygonOffsetFactor: -1,
+      fog: true,
+    })
+  }
+
   return materials
 }
 
@@ -147,6 +162,9 @@ export function applyThemeToScene({
   materials.screenArcLine.opacity = p.screenArcOpacity
 
   materials.pulse.color.set(p.lineInk)
+  if (materials._voltusTex) {
+    updateVoltusMugTexture(materials._voltusTex, isDark)
+  }
 
   for (const lightSet of lights) {
     lightSet.ambient.intensity = p.ambientIntensity
@@ -156,6 +174,9 @@ export function applyThemeToScene({
 }
 
 export function disposeMaterials(materials) {
+  if (materials._voltusTex && materials._voltusTex.texture) {
+    materials._voltusTex.texture.dispose()
+  }
   Object.values(materials).forEach((mat) => {
     if (mat && typeof mat.dispose === 'function') {
       mat.dispose()

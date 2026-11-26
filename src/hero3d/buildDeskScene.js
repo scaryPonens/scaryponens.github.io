@@ -951,6 +951,34 @@ export function buildDeskScene(materials) {
   coffeeMesh.position.set(mugX, coffeeY, mugZ)
   deskGroup.add(coffeeMesh)
 
+  // Curved open-ended CylinderGeometry arc decal wrapping the monochrome Voltus logo onto the front mug wall
+  if (materials.voltusDecal) {
+    const mugH = mugTopY - mugBaseY
+    const decalH = 0.084
+    const decalMidY = mugBaseY + mugH * 0.52
+    const rAtMugY = (y) =>
+      mugOuterR * MathUtils.lerp(0.95, 1.0, (y - mugBaseY) / mugH) + 0.0024
+    const decalTopR = rAtMugY(decalMidY + decalH * 0.5)
+    const decalBotR = rAtMugY(decalMidY - decalH * 0.5)
+    const decalSweep = 1.56
+    const decalCenterTheta = -0.18 // faces studio camera squarely while D-handle sits on +X right side
+    const decalGeo = trackGeo(
+      new CylinderGeometry(
+        decalTopR,
+        decalBotR,
+        decalH,
+        28,
+        1,
+        true,
+        decalCenterTheta - decalSweep * 0.5,
+        decalSweep
+      )
+    )
+    const decalMesh = new Mesh(decalGeo, materials.voltusDecal)
+    decalMesh.position.set(mugX, decalMidY, mugZ)
+    deskGroup.add(decalMesh)
+  }
+
   // Crisp architectural rim, base, silhouette, and coffee meniscus lines
   pushCircleXZ(inkVerts, mugX, mugTopY + 0.001, mugZ, mugOuterR, 28)
   pushCircleXZ(inkVerts, mugX, mugTopY + 0.001, mugZ, mugInnerR, 28)
