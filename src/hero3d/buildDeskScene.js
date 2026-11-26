@@ -243,13 +243,61 @@ export function buildDeskScene(materials) {
   pushSeg(mutedVerts, matHW, 0.019, 0.78 + matHD, -matHW, 0.019, 0.78 + matHD)
   pushSeg(mutedVerts, -matHW, 0.019, 0.78 + matHD, -matHW, 0.019, 0.78 - matHD)
 
-  // 2. Minimalist Cast-Aluminum Monitor Stand & Riser Column
-  // Swept V-wing base arms sitting cleanly on desk
-  addStaticBox(materials.massHigh, -0.52, 0.024, -0.14, 1.18, 0.042, 0.14, 0, -0.34, 0, 'ink')
-  addStaticBox(materials.massHigh, 0.52, 0.024, -0.14, 1.18, 0.042, 0.14, 0, 0.34, 0, 'ink')
-  addStaticBox(materials.massHigh, 0, 0.032, -0.34, 0.38, 0.055, 0.28, 0, 0, 0, 'ink')
-  // Vertical tapered riser column + cable pass-through ring
-  addStaticBox(materials.massMid, 0, 0.58, -0.38, 0.22, 1.06, 0.13, -0.04, 0, 0, 'ink')
+  // 2. Minimalist Cast-Aluminum Monitor Stand (Thin Rounded-Rectangle Base Plate + Riser Column)
+  const buildRoundedRectPlateGeo = (cx, cz, width, depth, radius, yBot, yTop, cornerSegs = 8) => {
+    const hw = width * 0.5
+    const hd = depth * 0.5
+    const r = Math.min(radius, hw * 0.9, hd * 0.9)
+    // Generate CW perimeter points in (x, z) so top/bottom/side normals face outward
+    const centers = [
+      { x: cx + hw - r, z: cz - hd + r, a0: -Math.PI * 0.5, a1: 0 },           // top-right
+      { x: cx + hw - r, z: cz + hd - r, a0: 0, a1: Math.PI * 0.5 },            // front-right
+      { x: cx - hw + r, z: cz + hd - r, a0: Math.PI * 0.5, a1: Math.PI },      // front-left
+      { x: cx - hw + r, z: cz - hd + r, a0: Math.PI, a1: Math.PI * 1.5 },      // top-left
+    ]
+    const ring = []
+    for (const c of centers) {
+      for (let i = 0; i <= cornerSegs; i++) {
+        const a = c.a0 + (i / cornerSegs) * (c.a1 - c.a0)
+        ring.push([c.x + Math.cos(a) * r, c.z + Math.sin(a) * r])
+      }
+    }
+
+    const pos = []
+    const addTri = (ax, ay, az, bx, by, bz, dx, dy, dz) => {
+      pos.push(ax, ay, az, bx, by, bz, dx, dy, dz)
+    }
+    for (let i = 0; i < ring.length; i++) {
+      const [x0, z0] = ring[i]
+      const [x1, z1] = ring[(i + 1) % ring.length]
+      // Top cap (+Y normal)
+      addTri(cx, yTop, cz, x1, yTop, z1, x0, yTop, z0)
+      // Bottom cap (-Y normal)
+      addTri(cx, yBot, cz, x0, yBot, z0, x1, yBot, z1)
+      // Side wall (outward normal)
+      addTri(x0, yBot, z0, x0, yTop, z0, x1, yTop, z1)
+      addTri(x0, yBot, z0, x1, yTop, z1, x1, yBot, z1)
+    }
+
+    const g = trackGeo(new BufferGeometry())
+    g.setAttribute('position', new Float32BufferAttribute(pos, 3))
+    g.computeVertexNormals()
+    return g
+  }
+
+  const standBaseGeo = buildRoundedRectPlateGeo(0, -0.26, 1.18, 0.56, 0.085, 0.002, 0.024, 8)
+  const standBaseEdges = trackGeo(new EdgesGeometry(standBaseGeo, 24))
+  const standBaseMesh = new Mesh(standBaseGeo, materials.massHigh)
+  deskGroup.add(standBaseMesh)
+  pushTransformedEdges(standBaseEdges.attributes.position, inkVerts, standBaseMesh.matrix)
+
+  // Subtle inset architectural chamfer loop on top of the rounded-rectangle base plate
+  const standInsetGeo = buildRoundedRectPlateGeo(0, -0.26, 1.08, 0.46, 0.06, 0.024, 0.025, 6)
+  const standInsetEdges = trackGeo(new EdgesGeometry(standInsetGeo, 24))
+  pushTransformedEdges(standInsetEdges.attributes.position, mutedVerts, standBaseMesh.matrix)
+
+  // Vertical tapered riser column + neck bracket + cable pass-through ring
+  addStaticBox(materials.massMid, 0, 0.58, -0.38, 0.22, 1.07, 0.13, -0.04, 0, 0, 'ink')
   addStaticBox(materials.massHigh, 0, 1.03, -0.31, 0.32, 0.24, 0.16, 0, 0, 0, 'ink')
   // Cable pass-through detail outline on riser
   pushSeg(inkVerts, -0.06, 0.22, -0.31, 0.06, 0.22, -0.31)
@@ -519,16 +567,17 @@ export function buildDeskScene(materials) {
 
   // Subtle curved USB-C cord from left Voyager half up toward the monitor stand cable pass-through
   if (leftUsbPort) {
-    const deskEntry = new Vector3(0, 0.024, -0.05)
+    const deskEntry = new Vector3(0, 0.026, -0.04)
     pushCubicCurve(
       inkVerts,
       leftUsbPort.tip,
       new Vector3(leftUsbPort.ctrl.x, 0.022, leftUsbPort.ctrl.z),
-      new Vector3(-0.18, 0.022, 0.14),
+      new Vector3(-0.16, 0.025, 0.12),
       deskEntry,
       18
     )
-    pushSeg(inkVerts, deskEntry.x, deskEntry.y, deskEntry.z, 0, 0.22, -0.31)
+    pushSeg(inkVerts, deskEntry.x, deskEntry.y, deskEntry.z, 0, 0.026, -0.31)
+    pushSeg(inkVerts, 0, 0.026, -0.31, 0, 0.22, -0.31)
   }
 
   // 5. Sculpted Logitech MX Master 4 Right-Hand Ergonomic Mouse on right side of desk mat
