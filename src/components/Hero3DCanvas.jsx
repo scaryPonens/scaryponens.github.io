@@ -149,7 +149,7 @@ function Hero3DCanvas({ runwayRef, reducedMotion, onFrameUpdate, onWebGLReady, o
         onFrameUpdateRef.current?.(smoothProgress, null)
       } else {
         const settleProgress = clamp((smoothProgress - HANDOFF_P) / (0.75 - HANDOFF_P), 0, 1)
-        desk.update(settleProgress, smoothPtrX, smoothPtrY, deskCamera, width, height)
+        desk.update(settleProgress, smoothPtrX, smoothPtrY, deskCamera, width, height, elapsedFlyTime)
         renderer.render(desk.scene, deskCamera)
         const screenBox = desk.projectScreenBox(deskCamera, width, height)
         onFrameUpdateRef.current?.(smoothProgress, screenBox)

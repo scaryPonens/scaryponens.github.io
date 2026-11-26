@@ -4,6 +4,7 @@ import {
   BufferGeometry,
   CylinderGeometry,
   DirectionalLight,
+  DynamicDrawUsage,
   EdgesGeometry,
   Euler,
   Float32BufferAttribute,
@@ -533,9 +534,9 @@ export function buildDeskScene(materials) {
   // 5. Sculpted Logitech MX Master 4 Right-Hand Ergonomic Mouse on right side of desk mat
   // Local mouse frame at (msX, msBaseY, msZ), rotated slightly inward toward typist:
   // -Z = front click paddles, +Z = rear palm heel, -X = flared left thumb wing + thumb wheel, +X = sloped right flank
-  const msX = 1.09
+  const msX = 1.02
   const msBaseY = 0.016
-  const msZ = 0.8
+  const msZ = 0.82
   const msRotY = 0.1
   const msQuat = new Quaternion().setFromEuler(new Euler(0, msRotY, 0))
   const msOrigin = new Vector3(msX, msBaseY, msZ)
@@ -856,6 +857,245 @@ export function buildDeskScene(materials) {
   // Drafting pen beside notebook
   addStaticBox(materials.massHigh, nbX + 0.46, 0.026, nbZ + 0.02, 0.032, 0.032, 0.72, 0, nbRot - 0.06, 0, 'ink')
 
+  // 7. Ceramic Mug of Steaming Coffee on a Thin Round Coaster (right of the MX Master 4 mouse)
+  const mugX = 1.62
+  const mugZ = 0.86
+  const deskSurfaceAtMugY = 0.016 // sits cleanly on right side of desk mat next to MX Master 4 mouse
+  const pushCircleXZ = (arr, cx, y, cz, radius, segs = 28, startAngle = 0, endAngle = Math.PI * 2) => {
+    for (let i = 0; i < segs; i++) {
+      const a0 = startAngle + (i / segs) * (endAngle - startAngle)
+      const a1 = startAngle + ((i + 1) / segs) * (endAngle - startAngle)
+      pushSeg(
+        arr,
+        cx + Math.cos(a0) * radius,
+        y,
+        cz + Math.sin(a0) * radius,
+        cx + Math.cos(a1) * radius,
+        y,
+        cz + Math.sin(a1) * radius
+      )
+    }
+  }
+
+  // 7a. Thin round coaster resting next to the mouse
+  const coasterR = 0.24
+  const coasterH = 0.015
+  const coasterGeo = trackGeo(new CylinderGeometry(coasterR, coasterR * 1.02, coasterH, 28))
+  const coasterMesh = new Mesh(coasterGeo, materials.massDeep)
+  coasterMesh.position.set(mugX, deskSurfaceAtMugY + coasterH / 2, mugZ)
+  deskGroup.add(coasterMesh)
+  pushCircleXZ(inkVerts, mugX, deskSurfaceAtMugY + coasterH + 0.002, mugZ, coasterR, 28)
+  pushCircleXZ(mutedVerts, mugX, deskSurfaceAtMugY + coasterH + 0.003, mugZ, coasterR * 0.82, 24)
+
+  // 7b. Hollow-rimmed cylindrical ceramic mug + dark coffee surface inside
+  const mugOuterR = 0.165
+  const mugInnerR = 0.138
+  const mugBaseY = deskSurfaceAtMugY + coasterH + 0.001
+  const mugTopY = mugBaseY + 0.32
+  const coffeeY = mugTopY - 0.052
+
+  const buildCeramicMugGeometry = () => {
+    const segs = 28
+    const pos = []
+    const addTri = (ax, ay, az, bx, by, bz, cx, cy, cz) => {
+      pos.push(ax, ay, az, bx, by, bz, cx, cy, cz)
+    }
+    const addQuad = (ax, ay, az, bx, by, bz, cx, cy, cz, dx, dy, dz) => {
+      addTri(ax, ay, az, bx, by, bz, cx, cy, cz)
+      addTri(ax, ay, az, cx, cy, cz, dx, dy, dz)
+    }
+
+    for (let i = 0; i < segs; i++) {
+      const a0 = (i / segs) * Math.PI * 2
+      const a1 = ((i + 1) / segs) * Math.PI * 2
+      const c0 = Math.cos(a0)
+      const s0 = Math.sin(a0)
+      const c1 = Math.cos(a1)
+      const s1 = Math.sin(a1)
+
+      const ox0 = mugX + c0 * mugOuterR
+      const oz0 = mugZ + s0 * mugOuterR
+      const ox1 = mugX + c1 * mugOuterR
+      const oz1 = mugZ + s1 * mugOuterR
+
+      const bx0 = mugX + c0 * (mugOuterR * 0.95)
+      const bz0 = mugZ + s0 * (mugOuterR * 0.95)
+      const bx1 = mugX + c1 * (mugOuterR * 0.95)
+      const bz1 = mugZ + s1 * (mugOuterR * 0.95)
+
+      const ix0 = mugX + c0 * mugInnerR
+      const iz0 = mugZ + s0 * mugInnerR
+      const ix1 = mugX + c1 * mugInnerR
+      const iz1 = mugZ + s1 * mugInnerR
+
+      // Outer cylindrical wall (outward normal)
+      addQuad(bx0, mugBaseY, bz0, ox0, mugTopY, oz0, ox1, mugTopY, oz1, bx1, mugBaseY, bz1)
+      // Top ceramic rim annulus (+Y normal)
+      addQuad(ix0, mugTopY, iz0, ix1, mugTopY, iz1, ox1, mugTopY, oz1, ox0, mugTopY, oz0)
+      // Inner ceramic wall above dark coffee surface (inward normal)
+      addQuad(ix0, coffeeY, iz0, ix1, coffeeY, iz1, ix1, mugTopY, iz1, ix0, mugTopY, iz0)
+    }
+
+    const g = trackGeo(new BufferGeometry())
+    g.setAttribute('position', new Float32BufferAttribute(pos, 3))
+    g.computeVertexNormals()
+    return g
+  }
+
+  const mugMesh = new Mesh(buildCeramicMugGeometry(), materials.massHigh)
+  deskGroup.add(mugMesh)
+
+  // Dark coffee liquid disc inside the mug
+  const coffeeGeo = trackGeo(new CylinderGeometry(mugInnerR * 0.995, mugInnerR * 0.995, 0.006, 28))
+  const coffeeMesh = new Mesh(coffeeGeo, materials.coffeeSurface)
+  coffeeMesh.position.set(mugX, coffeeY, mugZ)
+  deskGroup.add(coffeeMesh)
+
+  // Crisp architectural rim, base, silhouette, and coffee meniscus lines
+  pushCircleXZ(inkVerts, mugX, mugTopY + 0.001, mugZ, mugOuterR, 28)
+  pushCircleXZ(inkVerts, mugX, mugTopY + 0.001, mugZ, mugInnerR, 28)
+  pushCircleXZ(inkVerts, mugX, mugBaseY + 0.002, mugZ, mugOuterR * 0.95, 28)
+  pushCircleXZ(mutedVerts, mugX, coffeeY + 0.004, mugZ, mugInnerR * 0.92, 24)
+  pushCircleXZ(mutedVerts, mugX, coffeeY + 0.004, mugZ, mugInnerR * 0.52, 16, 0.4, 2.5)
+
+  // 7c. Sculpted D-Shaped Ceramic Handle angled in clear right-front 3/4 profile
+  const handleYaw = -0.3
+  const hDirX = Math.cos(handleYaw)
+  const hDirZ = Math.sin(handleYaw)
+  const handleSegs = 12
+  const handleMidY = (mugBaseY + mugTopY) * 0.51
+  const handleHalfSpanY = 0.108
+  const handleOutReach = 0.108
+  const handleBoxThick = 0.028
+  const handleBoxWidth = 0.034
+
+  const handleSpine = []
+  for (let i = 0; i <= handleSegs; i++) {
+    const t = i / handleSegs
+    const ang = -Math.PI / 2 + t * Math.PI
+    const radialOut = mugOuterR - 0.008 + Math.pow(Math.cos(ang), 0.78) * handleOutReach
+    const hy = handleMidY + Math.sin(ang) * handleHalfSpanY
+    handleSpine.push(new Vector3(mugX + hDirX * radialOut, hy, mugZ + hDirZ * radialOut))
+  }
+  for (let i = 0; i < handleSegs; i++) {
+    const p0 = handleSpine[i]
+    const p1 = handleSpine[i + 1]
+    const mid = p0.clone().add(p1).multiplyScalar(0.5)
+    const segVec = p1.clone().sub(p0)
+    const segLen = segVec.length() + 0.006
+    const hQuat = new Quaternion().setFromUnitVectors(new Vector3(0, 1, 0), segVec.normalize())
+    // Align handle width perpendicular to handle plane
+    const yawQuat = new Quaternion().setFromEuler(new Euler(0, -handleYaw, 0))
+    hQuat.multiply(yawQuat)
+    const segMesh = new Mesh(boxGeo, materials.massHigh)
+    segMesh.position.copy(mid)
+    segMesh.quaternion.copy(hQuat)
+    segMesh.scale.set(handleBoxThick, segLen, handleBoxWidth)
+    deskGroup.add(segMesh)
+
+    // Crisp outer and inner D-handle profile curves
+    const outOff = 0.015
+    pushSeg(
+      inkVerts,
+      p0.x + hDirX * outOff,
+      p0.y,
+      p0.z + hDirZ * outOff,
+      p1.x + hDirX * outOff,
+      p1.y,
+      p1.z + hDirZ * outOff
+    )
+    pushSeg(
+      inkVerts,
+      p0.x - hDirX * outOff,
+      p0.y,
+      p0.z - hDirZ * outOff,
+      p1.x - hDirX * outOff,
+      p1.y,
+      p1.z - hDirZ * outOff
+    )
+  }
+
+  // 7d. Animated Rising Monochrome Ink Steam Wisps (3 gentle S-curves; static when prefers-reduced-motion)
+  const wispSpecs = [
+    { dx: -0.052, dz: 0.015, height: 0.36, amp: 0.042, speed: 1.85, phase: 0.35 },
+    { dx: 0.004, dz: -0.018, height: 0.44, amp: 0.048, speed: 1.65, phase: 2.45 },
+    { dx: 0.054, dz: 0.012, height: 0.33, amp: 0.038, speed: 2.05, phase: 4.55 },
+  ]
+  const WISP_SEGS = 18
+  const SPLIT_SEG = 12 // lower/mid segments in bright inkLine, upper dissipating curl in mutedLine
+  const steamInkGeo = trackGeo(new BufferGeometry())
+  const steamInkAttr = new Float32BufferAttribute(new Float32Array(wispSpecs.length * SPLIT_SEG * 4 * 3), 3)
+  steamInkAttr.setUsage(DynamicDrawUsage)
+  steamInkGeo.setAttribute('position', steamInkAttr)
+  const steamInkLines = new LineSegments(steamInkGeo, materials.inkLine)
+  steamInkLines.frustumCulled = false
+  deskGroup.add(steamInkLines)
+
+  const steamMutedGeo = trackGeo(new BufferGeometry())
+  const steamMutedAttr = new Float32BufferAttribute(
+    new Float32Array(wispSpecs.length * (WISP_SEGS - SPLIT_SEG) * 2 * 3),
+    3
+  )
+  steamMutedAttr.setUsage(DynamicDrawUsage)
+  steamMutedGeo.setAttribute('position', steamMutedAttr)
+  const steamMutedLines = new LineSegments(steamMutedGeo, materials.mutedLine)
+  steamMutedLines.frustumCulled = false
+  deskGroup.add(steamMutedLines)
+
+  const updateSteamWisps = (time) => {
+    const inkArr = steamInkAttr.array
+    const mutedArr = steamMutedAttr.array
+    let inkIdx = 0
+    let mutedIdx = 0
+    const baseY = coffeeY + 0.02
+
+    const sampleWisp = (spec, s, out) => {
+      const env = Math.pow(s, 0.82) * (1 - 0.16 * s * s)
+      const wave = s * 5.8 - time * spec.speed + spec.phase
+      out.x = mugX + spec.dx + Math.sin(wave) * spec.amp * env + s * 0.012
+      out.y = baseY + s * spec.height
+      out.z = mugZ + spec.dz + Math.cos(wave * 0.85 + 0.7) * spec.amp * 0.6 * env
+    }
+
+    const pA = { x: 0, y: 0, z: 0 }
+    const pB = { x: 0, y: 0, z: 0 }
+    for (let w = 0; w < wispSpecs.length; w++) {
+      const spec = wispSpecs[w]
+      for (let i = 0; i < WISP_SEGS; i++) {
+        const s0 = i / WISP_SEGS
+        sampleWisp(spec, s0, pA)
+        sampleWisp(spec, (i + 1) / WISP_SEGS, pB)
+        if (i < SPLIT_SEG) {
+          // Crisp twin-hairline rib on lower/mid body so rising steam reads sharply across DPIs
+          const rib = (1 - s0 / (SPLIT_SEG / WISP_SEGS)) * 0.0025
+          inkArr[inkIdx++] = pA.x - rib
+          inkArr[inkIdx++] = pA.y
+          inkArr[inkIdx++] = pA.z
+          inkArr[inkIdx++] = pB.x - rib
+          inkArr[inkIdx++] = pB.y
+          inkArr[inkIdx++] = pB.z
+
+          inkArr[inkIdx++] = pA.x + rib
+          inkArr[inkIdx++] = pA.y
+          inkArr[inkIdx++] = pA.z
+          inkArr[inkIdx++] = pB.x + rib
+          inkArr[inkIdx++] = pB.y
+          inkArr[inkIdx++] = pB.z
+        } else {
+          mutedArr[mutedIdx++] = pA.x
+          mutedArr[mutedIdx++] = pA.y
+          mutedArr[mutedIdx++] = pA.z
+          mutedArr[mutedIdx++] = pB.x
+          mutedArr[mutedIdx++] = pB.y
+          mutedArr[mutedIdx++] = pB.z
+        }
+      }
+    }
+    steamInkAttr.needsUpdate = true
+    steamMutedAttr.needsUpdate = true
+  }
+  updateSteamWisps(0)
+
   const makeLineSegs = (verts, mat) => {
     const g = trackGeo(new BufferGeometry())
     g.setAttribute('position', new Float32BufferAttribute(verts, 3))
@@ -886,7 +1126,8 @@ export function buildDeskScene(materials) {
   const vRightTop = arcPoint(INNER_HALF_ARC * 0.96, -0.008, INNER_TOP_Y - 0.03)
   const projScratch = new Vector3()
 
-  function update(settleProgress, pointerX, pointerY, camera, viewportWidth, viewportHeight) {
+  function update(settleProgress, pointerX, pointerY, camera, viewportWidth, viewportHeight, time = 0) {
+    updateSteamWisps(time)
     // settleProgress in [0, 1] maps scroll p in [0.49, 0.76] -> swoops down & locks on 49" monitor
     const aspect = Math.max(0.35, viewportWidth / Math.max(1, viewportHeight))
     const fov = 40

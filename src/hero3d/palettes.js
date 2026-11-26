@@ -12,6 +12,7 @@ export const PALETTES = {
     massMid: '#3c3836',
     massHigh: '#504945',
     screenSurface: '#242221',
+    coffeeSurface: '#1d1c1b',
     lineMuted: '#a89984',
     lineInk: '#ebdbb2',
     ambientIntensity: 0.9,
@@ -28,6 +29,7 @@ export const PALETTES = {
     massMid: '#e5dfd3',
     massHigh: '#d8d2c7',
     screenSurface: '#f4f0e8',
+    coffeeSurface: '#4a453e',
     lineMuted: '#787067',
     lineInk: '#1c1a17',
     ambientIntensity: 0.84,
@@ -66,6 +68,10 @@ export function createThemeMaterials(initialDark) {
     }),
     screenSurface: new MeshBasicMaterial({
       color: p.screenSurface,
+      fog: true,
+    }),
+    coffeeSurface: new MeshBasicMaterial({
+      color: p.coffeeSurface,
       fog: true,
     }),
     gridLine: new LineBasicMaterial({
@@ -126,6 +132,7 @@ export function applyThemeToScene({
   materials.massMid.color.set(p.massMid)
   materials.massHigh.color.set(p.massHigh)
   materials.screenSurface.color.set(p.screenSurface)
+  materials.coffeeSurface.color.set(p.coffeeSurface)
 
   materials.gridLine.color.set(p.lineMuted)
   materials.gridLine.opacity = p.gridOpacity
