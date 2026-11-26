@@ -1,0 +1,1102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Harnesses borrow your terminal. Bots act on your behalf. — Reuben Peter-Paul</title>
+  <meta name="description" content="An interactive field note on how Orca bots differ from session harnesses like Claude Code: externalized state, split identity, and auditing ambient machine credentials." />
+  <link rel="canonical" href="https://reubenpeterpaul.com/blog/20261126-orca-bots-on-our-behalf.html" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="Reuben Peter-Paul" />
+  <meta property="og:title" content="Harnesses borrow your terminal. Bots act on your behalf." />
+  <meta property="og:description" content="An interactive field note on how Orca bots differ from session harnesses like Claude Code: externalized state, split identity, and auditing ambient machine credentials." />
+  <meta property="og:url" content="https://reubenpeterpaul.com/blog/20261126-orca-bots-on-our-behalf.html" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Harnesses borrow your terminal. Bots act on your behalf." />
+  <meta name="twitter:description" content="An interactive field note on how Orca bots differ from session harnesses like Claude Code: externalized state, split identity, and auditing ambient machine credentials." />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  <link rel="alternate" type="application/rss+xml" href="/feed.xml" title="RSS" />
+  <script>
+    (function() {
+      try {
+        var stored = localStorage.getItem('darkMode');
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (stored === 'true' || (stored === null && prefersDark)) {
+          document.documentElement.classList.add('dark');
+        }
+      } catch (e) {}
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      color-scheme: light;
+      --ex-bg: #faf8f4;
+      --ex-surface: #f1ede6;
+      --ex-surface-raised: #ffffff;
+      --ex-text: #1c1a17;
+      --ex-muted: #4a453e;
+      --ex-faint: #787067;
+      --ex-rule: #1c1a17;
+      --ex-border: #d8d2c7;
+      --ex-shade-1: #eae5dc;
+      --ex-shade-2: #ded8cd;
+      --ex-diag-bg: #ffffff;
+    }
+
+    :root.dark {
+      color-scheme: dark;
+      --ex-bg: #282828;
+      --ex-surface: #32302f;
+      --ex-surface-raised: #1d2021;
+      --ex-text: #ebdbb2;
+      --ex-muted: #d5c4a1;
+      --ex-faint: #a89984;
+      --ex-rule: #7c6f64;
+      --ex-border: #504945;
+      --ex-shade-1: #3c3836;
+      --ex-shade-2: #504945;
+      --ex-diag-bg: #242220;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--ex-bg);
+      color: var(--ex-text);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 16px;
+      line-height: 1.62;
+      -webkit-font-smoothing: antialiased;
+      transition: background-color 0.18s ease, color 0.18s ease;
+    }
+
+    .page {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 40px 28px 72px;
+    }
+
+    /* Top bar */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 44px;
+    }
+    .back-link {
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ex-faint);
+      text-decoration: none;
+    }
+    .back-link:hover { color: var(--ex-text); }
+
+    .theme-btn {
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ex-muted);
+      background: transparent;
+      border: 1px solid var(--ex-border);
+      border-radius: 4px;
+      padding: 4px 10px;
+      cursor: pointer;
+    }
+    .theme-btn:hover {
+      color: var(--ex-text);
+      border-color: var(--ex-text);
+    }
+
+    /* Kickers & Display Headings */
+    .kicker {
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      color: var(--ex-text);
+      margin-bottom: 14px;
+    }
+
+    .hero-title {
+      font-family: 'Newsreader', Georgia, serif;
+      font-variation-settings: "opsz" 60;
+      font-size: clamp(38px, 6.2vw, 56px);
+      font-weight: 400;
+      line-height: 1.05;
+      letter-spacing: -0.026em;
+      color: var(--ex-text);
+      margin-bottom: 24px;
+    }
+    .hero-title em {
+      font-style: italic;
+      font-weight: 400;
+      display: block;
+    }
+
+    .lead {
+      font-size: 19px;
+      line-height: 1.5;
+      letter-spacing: -0.012em;
+      color: var(--ex-text);
+      max-width: 63ch;
+      margin-bottom: 16px;
+    }
+
+    .companion-note {
+      font-size: 14px;
+      color: var(--ex-muted);
+      margin-bottom: 26px;
+    }
+    .companion-note a {
+      color: var(--ex-text);
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3.5px;
+    }
+
+    .jump-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 22px;
+      font-size: 14px;
+    }
+    .jump-nav a {
+      color: var(--ex-text);
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3.5px;
+      transition: opacity 0.15s ease;
+    }
+    .jump-nav a:hover { opacity: 0.68; }
+
+    .rule {
+      border: 0;
+      border-top: 1px solid var(--ex-rule);
+      margin: 48px 0 40px;
+    }
+
+    h2.sec-title {
+      font-family: 'Newsreader', Georgia, serif;
+      font-variation-settings: "opsz" 48;
+      font-size: clamp(28px, 4.2vw, 36px);
+      font-weight: 400;
+      line-height: 1.13;
+      letter-spacing: -0.022em;
+      color: var(--ex-text);
+      margin-bottom: 18px;
+    }
+
+    .prose p {
+      color: var(--ex-muted);
+      font-size: 16px;
+      line-height: 1.66;
+      max-width: 65ch;
+      margin-bottom: 16px;
+    }
+    .prose p strong {
+      color: var(--ex-text);
+      font-weight: 600;
+    }
+    .prose a {
+      color: var(--ex-text);
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3.5px;
+    }
+    .prose code {
+      font-family: 'IBM Plex Mono', ui-monospace, monospace;
+      font-size: 0.88em;
+      background: var(--ex-surface);
+      padding: 1px 5px;
+      border-radius: 3px;
+      color: var(--ex-text);
+    }
+
+    /* Editorial Side Note */
+    .side-note {
+      margin: 20px 0 22px;
+      padding: 13px 16px;
+      background: var(--ex-surface);
+      border: 1px solid var(--ex-border);
+      border-left: 3px solid var(--ex-rule);
+      border-radius: 4px;
+      max-width: 65ch;
+    }
+    .side-note-label {
+      font-family: 'IBM Plex Mono', ui-monospace, monospace;
+      font-size: 10.5px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--ex-faint);
+      margin-bottom: 6px;
+    }
+    .side-note p {
+      font-size: 14px;
+      line-height: 1.56;
+      color: var(--ex-muted);
+      margin: 0;
+    }
+    .side-note strong {
+      color: var(--ex-text);
+      font-weight: 600;
+    }
+    .side-note code {
+      font-family: 'IBM Plex Mono', ui-monospace, monospace;
+      font-size: 0.88em;
+      background: var(--ex-bg);
+      padding: 1px 5px;
+      border-radius: 3px;
+      color: var(--ex-text);
+    }
+
+    /* Monochrome Interactive Controls */
+    .control-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 26px 0 14px;
+    }
+    .control-label {
+      font-family: 'IBM Plex Mono', ui-monospace, monospace;
+      font-size: 11.5px;
+      color: var(--ex-faint);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .seg-group {
+      display: inline-flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .seg-btn {
+      font-family: 'Inter', sans-serif;
+      font-size: 12.5px;
+      font-weight: 500;
+      padding: 6px 11px;
+      border-radius: 4px;
+      border: 1px solid var(--ex-border);
+      background: transparent;
+      color: var(--ex-muted);
+      cursor: pointer;
+      transition: all 0.14s ease;
+    }
+    .seg-btn:hover {
+      border-color: var(--ex-text);
+      color: var(--ex-text);
+    }
+    .seg-btn.active {
+      background: var(--ex-text);
+      color: var(--ex-bg);
+      border-color: var(--ex-text);
+    }
+
+    /* Diagram Container */
+    .diagram-card {
+      background: var(--ex-diag-bg);
+      border: 1px solid var(--ex-border);
+      border-radius: 6px;
+      padding: 18px 16px 14px;
+      margin-bottom: 18px;
+      overflow-x: auto;
+    }
+    .diagram-caption {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed var(--ex-border);
+      font-family: 'IBM Plex Mono', ui-monospace, monospace;
+      font-size: 11px;
+      color: var(--ex-faint);
+    }
+    .drawio-svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .drawio-svg g[data-cell-id] {
+      transition: opacity 0.2s ease;
+    }
+    .drawio-svg g.is-dimmed {
+      opacity: 0.18 !important;
+    }
+
+    /* 3-Column Comparison Readout */
+    .custody-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .custody-cell {
+      background: var(--ex-surface);
+      border: 1px solid var(--ex-border);
+      border-radius: 5px;
+      padding: 12px 14px;
+    }
+    .custody-cell .c-head {
+      font-family: 'IBM Plex Mono', ui-monospace, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--ex-faint);
+      margin-bottom: 5px;
+    }
+    .custody-cell .c-val {
+      font-size: 13.5px;
+      line-height: 1.48;
+      color: var(--ex-text);
+    }
+
+    /* Interactive Identity Inspector Panel */
+    .id-panel {
+      background: var(--ex-surface);
+      border: 1px solid var(--ex-border);
+      border-radius: 6px;
+      padding: 18px;
+      margin-top: 12px;
+    }
+    .id-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--ex-border);
+    }
+    .id-title {
+      font-family: 'Newsreader', Georgia, serif;
+      font-size: 21px;
+      font-weight: 500;
+      color: var(--ex-text);
+    }
+    .id-badge {
+      font-family: 'IBM Plex Mono', ui-monospace, monospace;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 3px;
+      border: 1px solid var(--ex-border);
+      color: var(--ex-text);
+      background: var(--ex-bg);
+    }
+    .id-badge.owner-mode {
+      border-style: dashed;
+      border-color: var(--ex-rule);
+    }
+    .id-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    .id-box {
+      background: var(--ex-bg);
+      border: 1px solid var(--ex-border);
+      border-radius: 4px;
+      padding: 11px 13px;
+    }
+    .id-box h4 {
+      font-family: 'IBM Plex Mono', ui-monospace, monospace;
+      font-size: 10.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--ex-faint);
+      margin-bottom: 5px;
+    }
+    .id-box p {
+      font-size: 13.5px;
+      line-height: 1.48;
+      color: var(--ex-text);
+    }
+    .id-box code {
+      font-family: 'IBM Plex Mono', ui-monospace, monospace;
+      font-size: 0.88em;
+      background: var(--ex-surface);
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+
+    /* Stepper Scrubber */
+    .step-strip {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 6px;
+      margin: 22px 0 14px;
+    }
+    .step-pill {
+      text-align: left;
+      padding: 8px 9px;
+      border: 1px solid var(--ex-border);
+      border-radius: 4px;
+      background: transparent;
+      color: var(--ex-muted);
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      transition: all 0.14s ease;
+    }
+    .step-pill:hover {
+      border-color: var(--ex-text);
+      color: var(--ex-text);
+    }
+    .step-pill.active {
+      background: var(--ex-text);
+      color: var(--ex-bg);
+      border-color: var(--ex-text);
+    }
+    .step-pill .s-num {
+      display: block;
+      font-family: 'IBM Plex Mono', ui-monospace, monospace;
+      font-size: 10.5px;
+      opacity: 0.72;
+      margin-bottom: 2px;
+    }
+    .step-pill .s-lbl {
+      display: block;
+      font-size: 11.5px;
+      font-weight: 600;
+      line-height: 1.25;
+    }
+
+    .step-detail {
+      background: var(--ex-surface);
+      border: 1px solid var(--ex-border);
+      border-radius: 6px;
+      padding: 16px 18px;
+      margin-top: 14px;
+    }
+    .step-detail-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--ex-border);
+    }
+    .step-detail-title {
+      font-family: 'Newsreader', Georgia, serif;
+      font-size: 21px;
+      font-weight: 500;
+      color: var(--ex-text);
+    }
+    .step-detail-sha {
+      font-family: 'IBM Plex Mono', ui-monospace, monospace;
+      font-size: 11.5px;
+      color: var(--ex-faint);
+    }
+    .step-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .step-col h4 {
+      font-family: 'IBM Plex Mono', ui-monospace, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--ex-faint);
+      margin-bottom: 4px;
+    }
+    .step-col p {
+      font-size: 14px;
+      line-height: 1.54;
+      color: var(--ex-text);
+    }
+
+    /* Self-check section */
+    .quiz-list {
+      display: grid;
+      gap: 14px;
+      margin-top: 22px;
+    }
+    .quiz-card {
+      border: 1px solid var(--ex-border);
+      border-radius: 6px;
+      padding: 16px 18px;
+      background: var(--ex-surface);
+    }
+    .quiz-q {
+      font-size: 15.5px;
+      font-weight: 500;
+      color: var(--ex-text);
+      margin-bottom: 12px;
+    }
+    .quiz-opts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .quiz-opt {
+      font-family: 'IBM Plex Mono', ui-monospace, monospace;
+      font-size: 12px;
+      padding: 5px 10px;
+      border-radius: 4px;
+      border: 1px solid var(--ex-border);
+      background: var(--ex-bg);
+      color: var(--ex-muted);
+      cursor: pointer;
+      transition: all 0.14s ease;
+    }
+    .quiz-opt:hover {
+      border-color: var(--ex-text);
+      color: var(--ex-text);
+    }
+    .quiz-opt.picked-right {
+      background: var(--ex-text);
+      color: var(--ex-bg);
+      border-color: var(--ex-text);
+    }
+    .quiz-opt.picked-other {
+      border-style: dashed;
+      color: var(--ex-text);
+    }
+    .quiz-explain {
+      display: none;
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid var(--ex-border);
+      font-size: 14px;
+      line-height: 1.55;
+      color: var(--ex-muted);
+    }
+    .quiz-explain.visible { display: block; }
+    .quiz-explain strong { color: var(--ex-text); }
+
+    /* Footer */
+    .foot {
+      margin-top: 52px;
+      padding-top: 22px;
+      border-top: 1px solid var(--ex-rule);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 14px;
+      color: var(--ex-muted);
+    }
+    .foot a {
+      color: var(--ex-text);
+      text-decoration: underline;
+      text-underline-offset: 3.5px;
+    }
+
+    @media (max-width: 640px) {
+      .page { padding: 28px 18px 56px; }
+      .custody-grid { grid-template-columns: 1fr; }
+      .id-grid { grid-template-columns: 1fr; }
+      .step-strip { grid-template-columns: repeat(2, 1fr); }
+      .step-cols { grid-template-columns: 1fr; gap: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <a class="back-link" href="/">← Reuben Peter-Paul</a>
+      <button class="theme-btn" onclick="toggleTheme()" aria-label="Toggle light and dark theme">◐ Theme</button>
+    </header>
+
+    <div class="kicker">Field Note · State, Identity &amp; Ambient Authority</div>
+
+    <h1 class="hero-title">
+      Harnesses borrow your terminal.
+      <em>Bots act on your behalf.</em>
+    </h1>
+
+    <p class="lead">
+      Inside a session harness like <code>Claude Code</code>, your live attention does two jobs at once: holding context across turns and gating whatever CLIs your shell is signed into. Moving work to a persistent Orca bot removes you from that loop—forcing state out of chat scrollback and turning ambient machine logins into an explicit blast radius.
+    </p>
+
+    <p class="companion-note">
+      Expanded from Worth Looking At: <a href="/#radar-credential-audit">credential-audit</a> · Companion to <a href="/blog/20261124-orca-with-bots.html">Coding agents edit files. Coordinators hold the thread.</a> · Skill: <a href="https://github.com/scaryPonens/agent-skills" target="_blank" rel="noopener noreferrer">scaryPonens/agent-skills ↗</a> · Nov 26, 2026
+    </p>
+
+    <nav class="jump-nav" aria-label="Sections">
+      <a href="#tmux">Not Claude Code in tmux</a>
+      <a href="#behalf">Acting on your behalf</a>
+      <a href="#audit">Auditing the surface</a>
+      <a href="#bites">Where it still bites</a>
+      <a href="#check">Check yourself</a>
+    </nav>
+
+    <hr class="rule" id="tmux" />
+
+    <!-- SECTION 01 -->
+    <section>
+      <div class="kicker">01 / Not Claude Code in tmux</div>
+      <h2 class="sec-title">Leaving the terminal loop splits state and authority apart.</h2>
+
+      <div class="prose">
+        <p>
+          People hear “Orca bot” and picture <code>Claude Code</code> left open in a <code>tmux</code> pane. They both run an LLM with shell and file tools on your machine, so from ten feet away they look interchangeable.
+        </p>
+        <p>
+          In practice, a session harness leans on you sitting at the keyboard. First, <strong>its state lives in the chat transcript</strong>: when the context window fills, it auto-compacts older turns into a lossy summary, and when the session closes, the thread is over. Second, <strong>its authority is implicit</strong>: it runs inside your interactive shell with every token, SSH key, and signed-in CLI you have, which feels natural because your eyes are watching the prompt.
+        </p>
+        <p>
+          An Orca bot is built to outlive a session and wake asynchronously—on a pull-request check, a review comment, or a teammate’s message—when you are nowhere near the terminal. That single shift forces two things out into the open: <strong>durable state moves outside the chat</strong> (into explicit Items, <code>MEMORY.md</code>, and GitHub), and <strong>who acts as whom</strong> has to be defined per surface.
+        </p>
+      </div>
+
+      <div class="control-bar">
+        <span class="control-label">Compare runtime model</span>
+        <div class="seg-group" role="tablist" aria-label="Harness vs bot comparison">
+          <button class="seg-btn active" onclick="setModel('both', this)">Side by side</button>
+          <button class="seg-btn" onclick="setModel('harness', this)">A · Claude Code harness</button>
+          <button class="seg-btn" onclick="setModel('bot', this)">B · Persistent Orca bot</button>
+        </div>
+      </div>
+
+      <div class="diagram-card">
+        <svg id="svg-hvb" class="drawio-svg" xmlns="http://www.w3.org/2000/svg" style="background: transparent; background-color: transparent; color-scheme: inherit;" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" viewBox="0 0 893 328" content="&lt;mxfile host=&quot;Electron&quot;&gt;&#10;  &lt;diagram id=&quot;harness-vs-bot&quot; name=&quot;Harness vs Bot&quot;&gt;&#10;    &lt;mxGraphModel grid=&quot;0&quot; gridSize=&quot;10&quot; guides=&quot;1&quot; tooltips=&quot;1&quot; connect=&quot;1&quot; arrows=&quot;1&quot; fold=&quot;0&quot; page=&quot;0&quot; pageScale=&quot;1&quot; pageWidth=&quot;850&quot; pageHeight=&quot;1100&quot; math=&quot;0&quot; shadow=&quot;0&quot;&gt;&#10;      &lt;root&gt;&#10;        &lt;mxCell id=&quot;0&quot; /&gt;&#10;        &lt;mxCell id=&quot;1&quot; parent=&quot;0&quot; /&gt;&#10;        &lt;mxCell id=&quot;left-frame&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=4;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#888888;strokeWidth=1;dashed=1;dashPattern=4 4;&quot; value=&quot;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;325&quot; width=&quot;420&quot; x=&quot;20&quot; y=&quot;20&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;left-title&quot; parent=&quot;1&quot; style=&quot;text;html=1;align=left;verticalAlign=top;whiteSpace=wrap;fontFamily=Helvetica;fontSize=13;fontColor=#1c1a17;&quot; value=&quot;&amp;lt;b&amp;gt;A. Session harness (Claude Code)&amp;lt;/b&amp;gt;&amp;lt;br&amp;gt;&amp;lt;font color=&amp;quot;#666666&amp;quot; style=&amp;quot;font-size:11px;&amp;quot;&amp;gt;Your live presence holds the state and gates the shell.&amp;lt;/font&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;40&quot; width=&quot;388&quot; x=&quot;36&quot; y=&quot;32&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;l-you&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#eeeeee;strokeColor=#1c1a17;strokeWidth=1.25;fontFamily=Helvetica;fontSize=12;fontColor=#1c1a17;&quot; value=&quot;You watching an open terminal&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;42&quot; width=&quot;290&quot; x=&quot;85&quot; y=&quot;84&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;l-chat&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillStyle=cross-hatch;fillColor=#888888;hachureGap=8;hachureAngle=-45;sketch=0;jiggle=0;strokeColor=#1c1a17;strokeWidth=1.5;fontFamily=Helvetica;fontSize=12;fontColor=#1c1a17;labelBackgroundColor=#ffffff;&quot; value=&quot;&amp;lt;span style=&amp;quot;background-color:#ffffff;padding:2px 6px;&amp;quot;&amp;gt;&amp;lt;b&amp;gt;State in scrollback&amp;lt;/b&amp;gt; · auto-compacts &amp;amp;amp; dies&amp;lt;/span&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;48&quot; width=&quot;340&quot; x=&quot;60&quot; y=&quot;148&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;l-shell&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#eeeeee;strokeColor=#1c1a17;strokeWidth=1.25;fontFamily=Helvetica;fontSize=12;fontColor=#1c1a17;&quot; value=&quot;One implicit identity: &amp;lt;b&amp;gt;your shell&amp;lt;/b&amp;gt;&amp;lt;br&amp;gt;&amp;lt;font color=&amp;quot;#666666&amp;quot; style=&amp;quot;font-size:10px;&amp;quot;&amp;gt;inherits every signed-in CLI, token &amp;amp;amp; SSH key&amp;lt;/font&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;48&quot; width=&quot;330&quot; x=&quot;65&quot; y=&quot;218&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;l-stop&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#eeeeee;strokeColor=#1c1a17;strokeWidth=1.25;fontFamily=Helvetica;fontSize=11.5;fontColor=#1c1a17;&quot; value=&quot;Stops existing when session closes&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;38&quot; width=&quot;280&quot; x=&quot;90&quot; y=&quot;288&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;le1&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;l-you&quot; style=&quot;endArrow=block;endFill=1;strokeColor=#1c1a17;strokeWidth=1.25;&quot; target=&quot;l-chat&quot;&gt;&#10;          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;le2&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;l-chat&quot; style=&quot;endArrow=block;endFill=1;strokeColor=#1c1a17;strokeWidth=1.25;&quot; target=&quot;l-shell&quot;&gt;&#10;          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;le3&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;l-shell&quot; style=&quot;endArrow=block;endFill=1;strokeColor=#1c1a17;strokeWidth=1.25;&quot; target=&quot;l-stop&quot;&gt;&#10;          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;right-frame&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=4;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#1c1a17;strokeWidth=1.5;&quot; value=&quot;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;325&quot; width=&quot;440&quot; x=&quot;470&quot; y=&quot;20&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;right-title&quot; parent=&quot;1&quot; style=&quot;text;html=1;align=left;verticalAlign=top;whiteSpace=wrap;fontFamily=Helvetica;fontSize=13;fontColor=#1c1a17;&quot; value=&quot;&amp;lt;b&amp;gt;B. Persistent Orca bot&amp;lt;/b&amp;gt;&amp;lt;br&amp;gt;&amp;lt;font color=&amp;quot;#666666&amp;quot; style=&amp;quot;font-size:11px;&amp;quot;&amp;gt;Outlives the session; splits state and identity explicitly.&amp;lt;/font&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;40&quot; width=&quot;408&quot; x=&quot;486&quot; y=&quot;32&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;r-wake&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1c1a17;strokeWidth=1.5;fontFamily=Helvetica;fontSize=12;fontColor=#1c1a17;&quot; value=&quot;You &amp;lt;i&amp;gt;or&amp;lt;/i&amp;gt; async event wake (PR, CI, chat)&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;42&quot; width=&quot;320&quot; x=&quot;530&quot; y=&quot;84&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;r-state&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillStyle=hatch;fillColor=#888888;hachureGap=8;hachureAngle=-45;sketch=0;jiggle=0;strokeColor=#1c1a17;strokeWidth=1.5;fontFamily=Helvetica;fontSize=12;fontColor=#1c1a17;labelBackgroundColor=#ffffff;&quot; value=&quot;&amp;lt;span style=&amp;quot;padding:2px 6px;&amp;quot;&amp;gt;&amp;lt;b&amp;gt;Durable state:&amp;lt;/b&amp;gt; Items, MEMORY.md &amp;amp;amp; GitHub&amp;lt;/span&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;48&quot; width=&quot;350&quot; x=&quot;515&quot; y=&quot;148&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;r-rules&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1c1a17;strokeWidth=1.25;fontFamily=Helvetica;fontSize=12;fontColor=#1c1a17;&quot; value=&quot;&amp;lt;b&amp;gt;SOUL.md&amp;lt;/b&amp;gt; gate · read &amp;amp;amp; report before mutating&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;46&quot; width=&quot;320&quot; x=&quot;530&quot; y=&quot;218&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;r-self&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1c1a17;strokeWidth=1.25;fontFamily=Helvetica;fontSize=11.5;fontColor=#1c1a17;&quot; value=&quot;&amp;lt;b&amp;gt;Speaks as bot&amp;lt;/b&amp;gt;&amp;lt;br&amp;gt;&amp;lt;font color=&amp;quot;#666666&amp;quot; style=&amp;quot;font-size:10px;&amp;quot;&amp;gt;Slack &amp;amp;amp; waking thread&amp;lt;/font&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;42&quot; width=&quot;192&quot; x=&quot;492&quot; y=&quot;286&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;r-owner&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#e6e6e6;strokeColor=#1c1a17;strokeWidth=1.25;fontFamily=Helvetica;fontSize=11.5;fontColor=#1c1a17;&quot; value=&quot;&amp;lt;b&amp;gt;Acts as you&amp;lt;/b&amp;gt;&amp;lt;br&amp;gt;&amp;lt;font color=&amp;quot;#666666&amp;quot; style=&amp;quot;font-size:10px;&amp;quot;&amp;gt;gh, Linear &amp;amp;amp; host CLIs&amp;lt;/font&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;42&quot; width=&quot;194&quot; x=&quot;698&quot; y=&quot;286&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;re1&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;r-wake&quot; style=&quot;endArrow=block;endFill=1;strokeColor=#1c1a17;strokeWidth=1.5;&quot; target=&quot;r-state&quot;&gt;&#10;          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;re2&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;r-state&quot; style=&quot;endArrow=block;endFill=1;strokeColor=#1c1a17;strokeWidth=1.25;&quot; target=&quot;r-rules&quot;&gt;&#10;          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;re3&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;r-rules&quot; style=&quot;endArrow=block;endFill=1;strokeColor=#1c1a17;strokeWidth=1.25;&quot; target=&quot;r-self&quot;&gt;&#10;          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;re4&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;r-rules&quot; style=&quot;endArrow=block;endFill=1;strokeColor=#1c1a17;strokeWidth=1.25;&quot; target=&quot;r-owner&quot;&gt;&#10;          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;      &lt;/root&gt;&#10;    &lt;/mxGraphModel&gt;&#10;  &lt;/diagram&gt;&#10;&lt;/mxfile&gt;&#10;"><defs><pattern patternUnits="userSpaceOnUse" width="8" height="8" x="0" y="0" id="hvb-mx-pattern-cross-hatch-150-_888888-_787878-100-800-75--4500-0" patternTransform="translate(0,0) rotate(45) scale(1)"><rect x="0" y="0" width="8" height="8" stroke="#888888" stroke-width="0.75" fill="none" style="stroke: light-dark(rgb(136, 136, 136), rgb(120, 120, 120));"/></pattern><pattern patternUnits="userSpaceOnUse" width="8" height="8" x="0" y="0" id="hvb-mx-pattern-hatch-150-_888888-_787878-100-800-75--4500-0" patternTransform="translate(0,0) rotate(45) scale(1)"><line x1="4" y1="0" x2="4" y2="8" stroke="#888888" stroke-width="0.75" style="stroke: light-dark(rgb(136, 136, 136), rgb(120, 120, 120));"/></pattern></defs><g><g data-cell-id="0"><g data-cell-id="1"><g data-cell-id="left-frame"><g transform="translate(0.5,0.5)"><rect x="0" y="0" width="420" height="325" rx="13" ry="13" fill="none" stroke="#888888" stroke-dasharray="4 4" pointer-events="all" style="stroke: light-dark(rgb(136, 136, 136), rgb(120, 120, 120));"/></g></g><g data-cell-id="left-title"><g><rect x="16" y="12" width="388" height="40" fill="none" stroke="none" pointer-events="all"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe flex-start; justify-content: unsafe flex-start; width: 386px; height: 1px; padding-top: 19px; margin-left: 18px;"><div style="box-sizing: border-box; font-size: 0; text-align: left; color: #1c1a17; "><div style="display: inline-block; font-size: 13px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; "><b>A. Session harness (Claude Code)</b><br /><span style="font-size: 11px; color: light-dark(rgb(102, 102, 102), rgb(149, 149, 149));">Your live presence holds the state and gates the shell.</span></div></div></div></foreignObject><text x="18" y="32" fill="#1c1a17" font-family="Helvetica" font-size="13px" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"><tspan x="18" y="32">A. Session harness (Claude Code)</tspan><tspan x="18" y="48">Your live presence holds the state and gates the shell.</tspan></text></switch></g></g></g><g data-cell-id="l-you"><g transform="translate(0.5,0.5)"><rect x="65" y="64" width="290" height="42" rx="5.88" ry="5.88" fill="#eeeeee" stroke="#1c1a17" stroke-width="1.25" pointer-events="all" style="fill: light-dark(rgb(238, 238, 238), rgb(32, 32, 32)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 288px; height: 1px; padding-top: 85px; margin-left: 66px;"><div style="box-sizing: border-box; font-size: 0; text-align: center; color: #1c1a17; "><div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">You watching an open terminal</div></div></div></foreignObject><text x="210" y="89" fill="#1c1a17" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));">You watching an open terminal</text></switch></g></g></g><g data-cell-id="l-chat"><g><rect x="40" y="128" width="340" height="48" rx="5.76" ry="5.76" fill="url(#hvb-mx-pattern-cross-hatch-150-_888888-_787878-100-800-75--4500-0)" stroke="#1c1a17" stroke-width="1.5" pointer-events="all" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 338px; height: 1px; padding-top: 152px; margin-left: 41px;"><div style="box-sizing: border-box; font-size: 0; text-align: center; color: #1c1a17; background-color: #ffffff; "><div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; background-color: light-dark(#ffffff, #121212); white-space: normal; word-wrap: normal; "><span style="background-color: light-dark(rgb(255, 255, 255), rgb(18, 18, 18)); padding: 2px 6px;"><b>State in scrollback</b> · auto-compacts &amp; dies</span></div></div></div></foreignObject><text x="210" y="156" fill="#1c1a17" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));">State in scrollback · auto-compacts &amp; dies</text></switch></g></g></g><g data-cell-id="l-shell"><g transform="translate(0.5,0.5)"><rect x="45" y="198" width="330" height="48" rx="6.72" ry="6.72" fill="#eeeeee" stroke="#1c1a17" stroke-width="1.25" pointer-events="all" style="fill: light-dark(rgb(238, 238, 238), rgb(32, 32, 32)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 328px; height: 1px; padding-top: 222px; margin-left: 46px;"><div style="box-sizing: border-box; font-size: 0; text-align: center; color: #1c1a17; "><div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">One implicit identity: <b>your shell</b><br /><span style="font-size: 10px; color: light-dark(rgb(102, 102, 102), rgb(149, 149, 149));">inherits every signed-in CLI, token &amp; SSH key</span></div></div></div></foreignObject><text x="210" y="219" fill="#1c1a17" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"><tspan x="210" y="219">One implicit identity: your shell</tspan><tspan x="210" y="233">inherits every signed-in CLI, token &amp; SSH key</tspan></text></switch></g></g></g><g data-cell-id="l-stop"><g transform="translate(0.5,0.5)"><rect x="70" y="268" width="280" height="38" rx="5.32" ry="5.32" fill="#eeeeee" stroke="#1c1a17" stroke-width="1.25" pointer-events="all" style="fill: light-dark(rgb(238, 238, 238), rgb(32, 32, 32)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 278px; height: 1px; padding-top: 287px; margin-left: 71px;"><div style="box-sizing: border-box; font-size: 0; text-align: center; color: #1c1a17; "><div style="display: inline-block; font-size: 11.5px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">Stops existing when session closes</div></div></div></foreignObject><text x="210" y="290" fill="#1c1a17" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));">Stops existing when session closes</text></switch></g></g></g><g data-cell-id="le1"><g transform="translate(0.5,0.5)"><path d="M 210 106 L 210 119.35" fill="none" stroke="#1c1a17" stroke-width="1.25" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/><path d="M 210 126.6 L 206.38 119.35 L 213.63 119.35 Z" fill="#1c1a17" stroke="#1c1a17" stroke-width="1.25" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="le2"><g transform="translate(0.5,0.5)"><path d="M 210 176 L 210 189.35" fill="none" stroke="#1c1a17" stroke-width="1.25" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/><path d="M 210 196.6 L 206.38 189.35 L 213.63 189.35 Z" fill="#1c1a17" stroke="#1c1a17" stroke-width="1.25" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="le3"><g transform="translate(0.5,0.5)"><path d="M 210 246 L 210 259.35" fill="none" stroke="#1c1a17" stroke-width="1.25" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/><path d="M 210 266.6 L 206.38 259.35 L 213.63 259.35 Z" fill="#1c1a17" stroke="#1c1a17" stroke-width="1.25" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="right-frame"><g><rect x="450" y="0" width="440" height="325" rx="13" ry="13" fill="none" stroke="#1c1a17" stroke-width="1.5" pointer-events="all" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="right-title"><g><rect x="466" y="12" width="408" height="40" fill="none" stroke="none" pointer-events="all"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe flex-start; justify-content: unsafe flex-start; width: 406px; height: 1px; padding-top: 19px; margin-left: 468px;"><div style="box-sizing: border-box; font-size: 0; text-align: left; color: #1c1a17; "><div style="display: inline-block; font-size: 13px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; "><b>B. Persistent Orca bot</b><br /><span style="font-size: 11px; color: light-dark(rgb(102, 102, 102), rgb(149, 149, 149));">Outlives the session; splits state and identity explicitly.</span></div></div></div></foreignObject><text x="468" y="32" fill="#1c1a17" font-family="Helvetica" font-size="13px" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"><tspan x="468" y="32">B. Persistent Orca bot</tspan><tspan x="468" y="48">Outlives the session; splits state and identity explicitly.</tspan></text></switch></g></g></g><g data-cell-id="r-wake"><g><rect x="510" y="64" width="320" height="42" rx="5.88" ry="5.88" fill="#ffffff" stroke="#1c1a17" stroke-width="1.5" pointer-events="all" style="fill: light-dark(rgb(255, 255, 255), rgb(18, 18, 18)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 318px; height: 1px; padding-top: 85px; margin-left: 511px;"><div style="box-sizing: border-box; font-size: 0; text-align: center; color: #1c1a17; "><div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">You <i>or</i> async event wake (PR, CI, chat)</div></div></div></foreignObject><text x="670" y="89" fill="#1c1a17" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));">You or async event wake (PR, CI, chat)</text></switch></g></g></g><g data-cell-id="r-state"><g><rect x="495" y="128" width="350" height="48" rx="5.76" ry="5.76" fill="url(#hvb-mx-pattern-hatch-150-_888888-_787878-100-800-75--4500-0)" stroke="#1c1a17" stroke-width="1.5" pointer-events="all" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 348px; height: 1px; padding-top: 152px; margin-left: 496px;"><div style="box-sizing: border-box; font-size: 0; text-align: center; color: #1c1a17; background-color: #ffffff; "><div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; background-color: light-dark(#ffffff, #121212); white-space: normal; word-wrap: normal; "><span style="padding:2px 6px;"><b>Durable state:</b> Items, MEMORY.md &amp; GitHub</span></div></div></div></foreignObject><text x="670" y="156" fill="#1c1a17" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));">Durable state: Items, MEMORY.md &amp; GitHub</text></switch></g></g></g><g data-cell-id="r-rules"><g transform="translate(0.5,0.5)"><rect x="510" y="198" width="320" height="46" rx="6.44" ry="6.44" fill="#ffffff" stroke="#1c1a17" stroke-width="1.25" pointer-events="all" style="fill: light-dark(rgb(255, 255, 255), rgb(18, 18, 18)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 318px; height: 1px; padding-top: 221px; margin-left: 511px;"><div style="box-sizing: border-box; font-size: 0; text-align: center; color: #1c1a17; "><div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; "><b>SOUL.md</b> gate · read &amp; report before mutating</div></div></div></foreignObject><text x="670" y="225" fill="#1c1a17" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));">SOUL.md gate · read &amp; report before mutating</text></switch></g></g></g><g data-cell-id="r-self"><g transform="translate(0.5,0.5)"><rect x="472" y="266" width="192" height="42" rx="5.88" ry="5.88" fill="#ffffff" stroke="#1c1a17" stroke-width="1.25" pointer-events="all" style="fill: light-dark(rgb(255, 255, 255), rgb(18, 18, 18)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 190px; height: 1px; padding-top: 287px; margin-left: 473px;"><div style="box-sizing: border-box; font-size: 0; text-align: center; color: #1c1a17; "><div style="display: inline-block; font-size: 11.5px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; "><b>Speaks as bot</b><br /><span style="font-size: 10px; color: light-dark(rgb(102, 102, 102), rgb(149, 149, 149));">Slack &amp; waking thread</span></div></div></div></foreignObject><text x="568" y="283" fill="#1c1a17" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"><tspan x="568" y="283">Speaks as bot</tspan><tspan x="568" y="297">Slack &amp; waking thread</tspan></text></switch></g></g></g><g data-cell-id="r-owner"><g transform="translate(0.5,0.5)"><rect x="678" y="266" width="194" height="42" rx="5.88" ry="5.88" fill="#e6e6e6" stroke="#1c1a17" stroke-width="1.25" pointer-events="all" style="fill: light-dark(rgb(230, 230, 230), rgb(39, 39, 39)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 192px; height: 1px; padding-top: 287px; margin-left: 679px;"><div style="box-sizing: border-box; font-size: 0; text-align: center; color: #1c1a17; "><div style="display: inline-block; font-size: 11.5px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; "><b>Acts as you</b><br /><span style="font-size: 10px; color: light-dark(rgb(102, 102, 102), rgb(149, 149, 149));">gh, Linear &amp; host CLIs</span></div></div></div></foreignObject><text x="775" y="283" fill="#1c1a17" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"><tspan x="775" y="283">Acts as you</tspan><tspan x="775" y="297">gh, Linear &amp; host CLIs</tspan></text></switch></g></g></g><g data-cell-id="re1"><g><path d="M 670 106 L 670 118.82" fill="none" stroke="#1c1a17" stroke-width="1.5" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/><path d="M 670 126.32 L 666.25 118.82 L 673.75 118.82 Z" fill="#1c1a17" stroke="#1c1a17" stroke-width="1.5" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="re2"><g transform="translate(0.5,0.5)"><path d="M 670 176 L 670 189.35" fill="none" stroke="#1c1a17" stroke-width="1.25" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/><path d="M 670 196.6 L 666.38 189.35 L 673.63 189.35 Z" fill="#1c1a17" stroke="#1c1a17" stroke-width="1.25" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="re3"><g transform="translate(0.5,0.5)"><path d="M 634.45 244 L 607.71 261.3" fill="none" stroke="#1c1a17" stroke-width="1.25" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/><path d="M 601.63 265.24 L 605.75 258.26 L 609.68 264.35 Z" fill="#1c1a17" stroke="#1c1a17" stroke-width="1.25" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="re4"><g transform="translate(0.5,0.5)"><path d="M 706.59 244 L 734.27 261.4" fill="none" stroke="#1c1a17" stroke-width="1.25" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/><path d="M 740.41 265.26 L 732.34 264.47 L 736.2 258.33 Z" fill="#1c1a17" stroke="#1c1a17" stroke-width="1.25" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g></g></g></g><switch><g requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"/><a transform="translate(0,-5)" xlink:href="https://www.drawio.com/doc/faq/svg-export-text-problems" target="_blank"><text text-anchor="middle" font-size="10px" x="50%" y="100%">Text is not SVG - cannot display</text></a></switch></svg>
+        <div class="diagram-caption">
+          <span>Figure 1 · Session harness vs. persistent Orca bot (draw.io SVG · shades of gray &amp; hatching)</span>
+          <span id="hvb-status">Showing both runtime models</span>
+        </div>
+      </div>
+
+      <div class="custody-grid">
+        <div class="custody-cell">
+          <div class="c-head">Where state lives</div>
+          <div class="c-val" id="m-state"><strong>Claude Code:</strong> In transcript; auto-compacted when full.<br><strong>Orca bot:</strong> Items, <code>MEMORY.md</code> &amp; GitHub; chat isn’t auto-summarized.</div>
+        </div>
+        <div class="custody-cell">
+          <div class="c-head">When it runs</div>
+          <div class="c-val" id="m-wake"><strong>Claude Code:</strong> While your terminal session stays open.<br><strong>Orca bot:</strong> Direct chat <em>or</em> one-shot event wakes when unattended.</div>
+        </div>
+        <div class="custody-cell">
+          <div class="c-head">Identity model</div>
+          <div class="c-val" id="m-id"><strong>Claude Code:</strong> Always your shell identity.<br><strong>Orca bot:</strong> Speaks as itself in chat/Slack; executes work as you.</div>
+        </div>
+      </div>
+    </section>
+
+    <hr class="rule" id="behalf" />
+
+    <!-- SECTION 02 -->
+    <section>
+      <div class="kicker">02 / Acting on Your Behalf</div>
+      <h2 class="sec-title">Speaks as the bot. Executes as you.</h2>
+
+      <div class="prose">
+        <p>
+          “Acting on your behalf” does not mean a bot pretends to be you in conversation. Impersonating a teammate in Slack or double-posting on a pull request under two different names erodes trust immediately.
+        </p>
+        <p>
+          Instead, Orca splits <strong>voice</strong> from <strong>work</strong>. Where people read messages—Slack channels, DMs, or the thread that woke the bot—the bot speaks strictly under its own name and avatar. Where engineering state changes—opening pull requests, updating issue labels, pushing branches, or querying cloud state—it uses the host’s tools (<code>gh</code>, <code>orca linear</code>, <code>gt</code>) authenticated as its owner, adding explicit attribution (<em>“asked by &lt;name&gt; via &lt;Bot&gt;”</em>) whenever someone else triggered the write.
+        </p>
+
+        <aside class="side-note" aria-label="Side note on policy vs sandbox">
+          <div class="side-note-label">Side note · Policy gate, not an OS container</div>
+          <p>
+            An Orca bot’s home folder holds <code>SOUL.md</code>—where you set rules like <em>“read and report first; change nothing externally until I say so.”</em> That rule is a behavioral contract enforced in the prompt and item workflow (<code>Needs you</code>), <strong>not</strong> a kernel sandbox. Any CLI signed in on the machine remains reachable if a command invokes it.
+          </p>
+        </aside>
+      </div>
+
+      <div class="control-bar">
+        <span class="control-label">Inspect action &amp; identity</span>
+        <div class="seg-group" role="tablist" aria-label="Identity action selector">
+          <button class="seg-btn active" onclick="setIdentity('slack', this)">Post in Slack</button>
+          <button class="seg-btn" onclick="setIdentity('waking', this)">Reply where woken</button>
+          <button class="seg-btn" onclick="setIdentity('github', this)">GitHub / PR work</button>
+          <button class="seg-btn" onclick="setIdentity('hostcli', this)">Host cloud &amp; stack CLIs</button>
+        </div>
+      </div>
+
+      <div class="id-panel">
+        <div class="id-top">
+          <div class="id-title" id="id-title">Posting or replying in a Slack channel</div>
+          <span class="id-badge" id="id-mode">Mode · Speaks as bot</span>
+        </div>
+        <div class="id-grid">
+          <div class="id-box">
+            <h4>Who teammates see</h4>
+            <p id="id-who"><strong>The bot’s own Slack identity</strong> (name + bot badge)—never spoofed as a message typed by you.</p>
+          </div>
+          <div class="id-box">
+            <h4>Credential path</h4>
+            <p id="id-cred"><code>orca slack post</code> via Orca’s connected Slack bot token, scoped to linked workspaces.</p>
+          </div>
+          <div class="id-box">
+            <h4>Guardrail in practice</h4>
+            <p id="id-guard"><code>SOUL.md</code> blocks unapproved external posts; if a channel name is ambiguous across workspaces, the bot must ask you which one.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <hr class="rule" id="audit" />
+
+    <!-- SECTION 03 -->
+    <section>
+      <div class="kicker">03 / Auditing the Blast Radius</div>
+      <h2 class="sec-title">Turning “what can you touch?” into credential-audit.</h2>
+
+      <div class="prose">
+        <p>
+          After watching a bot coordinate review fixes across a stack of pull requests and prepare a deployment handoff, a practical question hit me: <strong>what accounts, services, and credentials can this bot actually reach on this machine right now—and how do we know which ones are live?</strong>
+        </p>
+        <p>
+          Both <code>Claude Code</code> and an Orca bot inherit the same workstation environment, but you rarely audit your own shell while typing in it. Asking the bot to inventory its own reach—strictly read-only, without printing secret values or calling APIs with raw environment tokens—turned into <a href="https://github.com/scaryPonens/agent-skills/tree/main/skills/credential-audit" target="_blank" rel="noopener noreferrer"><code>credential-audit</code></a>, published in <a href="https://github.com/scaryPonens/agent-skills" target="_blank" rel="noopener noreferrer"><code>scaryPonens/agent-skills</code></a>.
+        </p>
+      </div>
+
+      <div class="step-strip" role="tablist" aria-label="Credential audit surfaces">
+        <button class="step-pill active" onclick="setAuditStep(0, this)">
+          <span class="s-num">All</span>
+          <span class="s-lbl">Full surface</span>
+        </button>
+        <button class="step-pill" onclick="setAuditStep(1, this)">
+          <span class="s-num">01</span>
+          <span class="s-lbl">Env names</span>
+        </button>
+        <button class="step-pill" onclick="setAuditStep(2, this)">
+          <span class="s-num">02</span>
+          <span class="s-lbl">Connectors</span>
+        </button>
+        <button class="step-pill" onclick="setAuditStep(3, this)">
+          <span class="s-num">03</span>
+          <span class="s-lbl">Signed-in CLIs</span>
+        </button>
+        <button class="step-pill" onclick="setAuditStep(4, this)">
+          <span class="s-num">04</span>
+          <span class="s-lbl">Git &amp; SSH</span>
+        </button>
+        <button class="step-pill" onclick="setAuditStep(5, this)">
+          <span class="s-num">05</span>
+          <span class="s-lbl">Blind spots</span>
+        </button>
+      </div>
+
+      <div class="diagram-card">
+        <svg id="svg-csb" class="drawio-svg" xmlns="http://www.w3.org/2000/svg" style="background: transparent; background-color: transparent; color-scheme: inherit;" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" viewBox="0 0 928 372" content="&lt;mxfile host=&quot;Electron&quot;&gt;&#10;  &lt;diagram id=&quot;credential-surface-breadboard&quot; name=&quot;Credential Surface Breadboard&quot;&gt;&#10;    &lt;mxGraphModel grid=&quot;0&quot; gridSize=&quot;10&quot; guides=&quot;1&quot; tooltips=&quot;1&quot; connect=&quot;1&quot; arrows=&quot;1&quot; fold=&quot;0&quot; page=&quot;0&quot; pageScale=&quot;1&quot; pageWidth=&quot;850&quot; pageHeight=&quot;1100&quot; math=&quot;0&quot; shadow=&quot;0&quot;&gt;&#10;      &lt;root&gt;&#10;        &lt;mxCell id=&quot;0&quot; /&gt;&#10;        &lt;mxCell id=&quot;1&quot; parent=&quot;0&quot; /&gt;&#10;        &lt;mxCell id=&quot;place-config&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=5;whiteSpace=wrap;html=1;fillStyle=hatch;fillColor=#8c8c8c;hachureGap=9;hachureAngle=-45;sketch=0;jiggle=0;strokeColor=#1c1a17;strokeWidth=1.5;&quot; value=&quot;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;235&quot; width=&quot;275&quot; x=&quot;20&quot; y=&quot;20&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;place-config-label&quot; parent=&quot;1&quot; style=&quot;text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;fontSize=14.5;fontColor=#1c1a17;labelBackgroundColor=#ffffff;spacingLeft=4;spacingRight=4;&quot; value=&quot;&amp;lt;u&amp;gt;&amp;lt;b&amp;gt;Configured (unverified)&amp;lt;/b&amp;gt;&amp;lt;/u&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;26&quot; width=&quot;195&quot; x=&quot;38&quot; y=&quot;34&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;op-env&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1c1a17;strokeWidth=1.5;fontFamily=Helvetica;fontSize=12;align=left;spacingLeft=12;fontColor=#1c1a17;&quot; value=&quot;env variable names&amp;lt;br&amp;gt;&amp;lt;font color=&amp;quot;#666666&amp;quot; style=&amp;quot;font-size:11px;&amp;quot;&amp;gt;*_TOKEN, *_KEY · values never read&amp;lt;/font&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;64&quot; width=&quot;238&quot; x=&quot;38&quot; y=&quot;76&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;op-mcp&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1c1a17;strokeWidth=1.5;fontFamily=Helvetica;fontSize=12;align=left;spacingLeft=12;fontColor=#1c1a17;&quot; value=&quot;MCP &amp;amp;amp; Orca connectors&amp;lt;br&amp;gt;&amp;lt;font color=&amp;quot;#666666&amp;quot; style=&amp;quot;font-size:11px;&amp;quot;&amp;gt;.claude, .pi, orca · configured only&amp;lt;/font&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;64&quot; width=&quot;238&quot; x=&quot;38&quot; y=&quot;162&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;place-audit&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=5;whiteSpace=wrap;html=1;fillStyle=hatch;fillColor=#8c8c8c;hachureGap=9;hachureAngle=-45;sketch=0;jiggle=0;strokeColor=#1c1a17;strokeWidth=1.5;&quot; value=&quot;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;235&quot; width=&quot;285&quot; x=&quot;340&quot; y=&quot;20&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;place-audit-label&quot; parent=&quot;1&quot; style=&quot;text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;fontSize=14.5;fontColor=#1c1a17;labelBackgroundColor=#ffffff;spacingLeft=4;spacingRight=4;&quot; value=&quot;&amp;lt;u&amp;gt;&amp;lt;b&amp;gt;credential-audit&amp;lt;/b&amp;gt;&amp;lt;/u&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;26&quot; width=&quot;145&quot; x=&quot;358&quot; y=&quot;34&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;op-probe&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1c1a17;strokeWidth=1.5;fontFamily=Helvetica;fontSize=12;align=left;spacingLeft=12;fontColor=#1c1a17;&quot; value=&quot;audit.sh read-only probe&amp;lt;br&amp;gt;&amp;lt;font color=&amp;quot;#666666&amp;quot; style=&amp;quot;font-size:11px;&amp;quot;&amp;gt;whitelisted verbs · zero API calls&amp;lt;/font&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;64&quot; width=&quot;248&quot; x=&quot;358&quot; y=&quot;76&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;op-table&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1c1a17;strokeWidth=1.5;fontFamily=Helvetica;fontSize=12;align=left;spacingLeft=12;fontColor=#1c1a17;&quot; value=&quot;4-table access report&amp;lt;br&amp;gt;&amp;lt;font color=&amp;quot;#666666&amp;quot; style=&amp;quot;font-size:11px;&amp;quot;&amp;gt;identity, auth method, verified vs. not&amp;lt;/font&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;64&quot; width=&quot;248&quot; x=&quot;358&quot; y=&quot;162&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;place-live&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=5;whiteSpace=wrap;html=1;fillStyle=hatch;fillColor=#8c8c8c;hachureGap=9;hachureAngle=-45;sketch=0;jiggle=0;strokeColor=#1c1a17;strokeWidth=1.5;&quot; value=&quot;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;235&quot; width=&quot;275&quot; x=&quot;670&quot; y=&quot;20&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;place-live-label&quot; parent=&quot;1&quot; style=&quot;text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;fontSize=14.5;fontColor=#1c1a17;labelBackgroundColor=#ffffff;spacingLeft=4;spacingRight=4;&quot; value=&quot;&amp;lt;u&amp;gt;&amp;lt;b&amp;gt;Host logins (verified)&amp;lt;/b&amp;gt;&amp;lt;/u&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;26&quot; width=&quot;185&quot; x=&quot;688&quot; y=&quot;34&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;op-cli&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1c1a17;strokeWidth=1.5;fontFamily=Helvetica;fontSize=12;align=left;spacingLeft=12;fontColor=#1c1a17;&quot; value=&quot;16 signed-in CLIs&amp;lt;br&amp;gt;&amp;lt;font color=&amp;quot;#666666&amp;quot; style=&amp;quot;font-size:11px;&amp;quot;&amp;gt;gh, gt, gcloud, aws, kubectl, op&amp;lt;/font&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;64&quot; width=&quot;238&quot; x=&quot;688&quot; y=&quot;76&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;op-ssh&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1c1a17;strokeWidth=1.5;fontFamily=Helvetica;fontSize=12;align=left;spacingLeft=12;fontColor=#1c1a17;&quot; value=&quot;Git helper &amp;amp;amp; SSH agent&amp;lt;br&amp;gt;&amp;lt;font color=&amp;quot;#666666&amp;quot; style=&amp;quot;font-size:11px;&amp;quot;&amp;gt;credential.helper + ssh-add -l&amp;lt;/font&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;64&quot; width=&quot;238&quot; x=&quot;688&quot; y=&quot;162&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;c1&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;op-env&quot; style=&quot;endArrow=block;endFill=1;strokeColor=#1c1a17;strokeWidth=1.5;&quot; target=&quot;op-probe&quot;&gt;&#10;          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;c2&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;op-mcp&quot; style=&quot;endArrow=block;endFill=1;strokeColor=#1c1a17;strokeWidth=1.5;&quot; target=&quot;op-table&quot;&gt;&#10;          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;c3&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;op-cli&quot; style=&quot;endArrow=block;endFill=1;strokeColor=#1c1a17;strokeWidth=1.5;&quot; target=&quot;op-probe&quot;&gt;&#10;          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;c4&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;op-ssh&quot; style=&quot;endArrow=block;endFill=1;strokeColor=#1c1a17;strokeWidth=1.5;&quot; target=&quot;op-table&quot;&gt;&#10;          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;c5&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;op-probe&quot; style=&quot;endArrow=block;endFill=1;strokeColor=#1c1a17;strokeWidth=1.5;&quot; target=&quot;op-table&quot;&gt;&#10;          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;risk-config&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillStyle=cross-hatch;fillColor=#8c8c8c;hachureGap=8;hachureAngle=-45;sketch=0;jiggle=0;strokeColor=#1c1a17;strokeWidth=1.5;fontFamily=Helvetica;fontSize=11.5;fontColor=#1c1a17;labelBackgroundColor=#ffffff;&quot; value=&quot;&amp;lt;i&amp;gt;Presence != permission; calling env tokens could mutate state&amp;lt;/i&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;54&quot; width=&quot;275&quot; x=&quot;20&quot; y=&quot;290&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;risk-audit&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillStyle=cross-hatch;fillColor=#8c8c8c;hachureGap=8;hachureAngle=-45;sketch=0;jiggle=0;strokeColor=#1c1a17;strokeWidth=1.5;fontFamily=Helvetica;fontSize=11.5;fontColor=#1c1a17;labelBackgroundColor=#ffffff;&quot; value=&quot;&amp;lt;i&amp;gt;Blind spots: Keychain, ~/.aws &amp;amp;amp; ~/.kube files, cookies, .env&amp;lt;/i&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;54&quot; width=&quot;285&quot; x=&quot;340&quot; y=&quot;290&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;risk-live&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillStyle=cross-hatch;fillColor=#8c8c8c;hachureGap=8;hachureAngle=-45;sketch=0;jiggle=0;strokeColor=#1c1a17;strokeWidth=1.5;fontFamily=Helvetica;fontSize=11.5;fontColor=#1c1a17;labelBackgroundColor=#ffffff;&quot; value=&quot;&amp;lt;i&amp;gt;Unknown binaries aren&amp;amp;apos;t safe (--help triggered a self-update)&amp;lt;/i&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;54&quot; width=&quot;275&quot; x=&quot;670&quot; y=&quot;290&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;d1&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;place-config&quot; style=&quot;endArrow=none;dashed=1;dashPattern=4 4;strokeColor=#1c1a17;strokeWidth=1.25;&quot; target=&quot;risk-config&quot;&gt;&#10;          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;d2&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;place-audit&quot; style=&quot;endArrow=none;dashed=1;dashPattern=4 4;strokeColor=#1c1a17;strokeWidth=1.25;&quot; target=&quot;risk-audit&quot;&gt;&#10;          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;d3&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;place-live&quot; style=&quot;endArrow=none;dashed=1;dashPattern=4 4;strokeColor=#1c1a17;strokeWidth=1.25;&quot; target=&quot;risk-live&quot;&gt;&#10;          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;key-lbl&quot; parent=&quot;1&quot; style=&quot;text;html=1;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=12;fontColor=#1c1a17;&quot; value=&quot;&amp;lt;b&amp;gt;Key&amp;lt;/b&amp;gt;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;24&quot; width=&quot;38&quot; x=&quot;20&quot; y=&quot;366&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;key-s1&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=20;fillStyle=hatch;fillColor=#8c8c8c;hachureGap=6;hachureAngle=-45;sketch=0;jiggle=0;strokeColor=#1c1a17;strokeWidth=1.25;&quot; value=&quot;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;20&quot; width=&quot;32&quot; x=&quot;62&quot; y=&quot;367&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;key-t1&quot; parent=&quot;1&quot; style=&quot;text;html=1;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=11.5;fontColor=#1c1a17;&quot; value=&quot;place: surface or audit stage&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;24&quot; width=&quot;175&quot; x=&quot;102&quot; y=&quot;365&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;key-s2&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=20;fillColor=#ffffff;strokeColor=#1c1a17;strokeWidth=1.25;&quot; value=&quot;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;20&quot; width=&quot;32&quot; x=&quot;285&quot; y=&quot;367&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;key-t2&quot; parent=&quot;1&quot; style=&quot;text;html=1;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=11.5;fontColor=#1c1a17;&quot; value=&quot;operation: what audit.sh checks&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;24&quot; width=&quot;180&quot; x=&quot;325&quot; y=&quot;365&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;key-s3&quot; parent=&quot;1&quot; style=&quot;rounded=1;arcSize=20;fillStyle=cross-hatch;fillColor=#8c8c8c;hachureGap=6;hachureAngle=-45;sketch=0;jiggle=0;strokeColor=#1c1a17;strokeWidth=1.25;&quot; value=&quot;&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;20&quot; width=&quot;32&quot; x=&quot;515&quot; y=&quot;367&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;key-t3&quot; parent=&quot;1&quot; style=&quot;text;html=1;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=11.5;fontColor=#1c1a17;&quot; value=&quot;blind spot or safety boundary&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;24&quot; width=&quot;170&quot; x=&quot;555&quot; y=&quot;365&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;key-arr&quot; edge=&quot;1&quot; parent=&quot;1&quot; style=&quot;endArrow=block;endFill=1;strokeColor=#1c1a17;strokeWidth=1.5;&quot; value=&quot;&quot;&gt;&#10;          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;&gt;&#10;            &lt;mxPoint x=&quot;735&quot; y=&quot;377&quot; as=&quot;sourcePoint&quot; /&gt;&#10;            &lt;mxPoint x=&quot;770&quot; y=&quot;377&quot; as=&quot;targetPoint&quot; /&gt;&#10;          &lt;/mxGeometry&gt;&#10;        &lt;/mxCell&gt;&#10;        &lt;mxCell id=&quot;key-t4&quot; parent=&quot;1&quot; style=&quot;text;html=1;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=11.5;fontColor=#1c1a17;&quot; value=&quot;flow: read-only evidence&quot; vertex=&quot;1&quot;&gt;&#10;          &lt;mxGeometry height=&quot;24&quot; width=&quot;165&quot; x=&quot;778&quot; y=&quot;365&quot; as=&quot;geometry&quot; /&gt;&#10;        &lt;/mxCell&gt;&#10;      &lt;/root&gt;&#10;    &lt;/mxGraphModel&gt;&#10;  &lt;/diagram&gt;&#10;&lt;/mxfile&gt;&#10;"><defs><pattern patternUnits="userSpaceOnUse" width="9" height="9" x="0" y="0" id="csb-mx-pattern-hatch-150-_8c8c8c-_757575-100-900-75--4500-0" patternTransform="translate(0,0) rotate(45) scale(1)"><line x1="4.5" y1="0" x2="4.5" y2="9" stroke="#8c8c8c" stroke-width="0.75" style="stroke: light-dark(rgb(140, 140, 140), rgb(117, 117, 117));"/></pattern><pattern patternUnits="userSpaceOnUse" width="8" height="8" x="0" y="0" id="csb-mx-pattern-cross-hatch-150-_8c8c8c-_757575-100-800-75--4500-0" patternTransform="translate(0,0) rotate(45) scale(1)"><rect x="0" y="0" width="8" height="8" stroke="#8c8c8c" stroke-width="0.75" fill="none" style="stroke: light-dark(rgb(140, 140, 140), rgb(117, 117, 117));"/></pattern><pattern patternUnits="userSpaceOnUse" width="6" height="6" x="0" y="0" id="csb-mx-pattern-hatch-125-_8c8c8c-_757575-100-600-63--4500-0" patternTransform="translate(0,0) rotate(45) scale(1)"><line x1="3" y1="0" x2="3" y2="6" stroke="#8c8c8c" stroke-width="0.625" style="stroke: light-dark(rgb(140, 140, 140), rgb(117, 117, 117));"/></pattern><pattern patternUnits="userSpaceOnUse" width="6" height="6" x="0" y="0" id="csb-mx-pattern-cross-hatch-125-_8c8c8c-_757575-100-600-63--4500-0" patternTransform="translate(0,0) rotate(45) scale(1)"><rect x="0" y="0" width="6" height="6" stroke="#8c8c8c" stroke-width="0.625" fill="none" style="stroke: light-dark(rgb(140, 140, 140), rgb(117, 117, 117));"/></pattern></defs><g><g data-cell-id="0"><g data-cell-id="1"><g data-cell-id="place-config"><g><rect x="0" y="0" width="275" height="235" rx="11.75" ry="11.75" fill="url(#csb-mx-pattern-hatch-150-_8c8c8c-_757575-100-900-75--4500-0)" stroke="#1c1a17" stroke-width="1.5" pointer-events="all" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="place-config-label"><g><rect x="18" y="14" width="195" height="26" fill="none" stroke="none" pointer-events="all"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe flex-start; width: 185px; height: 1px; padding-top: 27px; margin-left: 24px;"><div style="box-sizing: border-box; font-size: 0; text-align: left; color: #1c1a17; background-color: #ffffff; "><div style="display: inline-block; font-size: 14.5px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; background-color: light-dark(#ffffff, #121212); white-space: normal; word-wrap: normal; "><u><b>Configured (unverified)</b></u></div></div></div></foreignObject><text x="24" y="31" fill="#1c1a17" font-family="Helvetica" font-size="15px" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));">Configured (unverified)</text></switch></g></g></g><g data-cell-id="op-env"><g><rect x="18" y="56" width="238" height="64" rx="8.96" ry="8.96" fill="#ffffff" stroke="#1c1a17" stroke-width="1.5" pointer-events="all" style="fill: light-dark(rgb(255, 255, 255), rgb(18, 18, 18)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe flex-start; width: 224px; height: 1px; padding-top: 88px; margin-left: 32px;"><div style="box-sizing: border-box; font-size: 0; text-align: left; color: #1c1a17; "><div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">env variable names<br /><span style="font-size: 11px; color: light-dark(rgb(102, 102, 102), rgb(149, 149, 149));">*_TOKEN, *_KEY · values never read</span></div></div></div></foreignObject><text x="32" y="85" fill="#1c1a17" font-family="Helvetica" font-size="12px" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"><tspan x="32" y="85">env variable names</tspan><tspan x="32" y="99">*_TOKEN, *_KEY · values never read</tspan></text></switch></g></g></g><g data-cell-id="op-mcp"><g><rect x="18" y="142" width="238" height="64" rx="8.96" ry="8.96" fill="#ffffff" stroke="#1c1a17" stroke-width="1.5" pointer-events="all" style="fill: light-dark(rgb(255, 255, 255), rgb(18, 18, 18)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe flex-start; width: 224px; height: 1px; padding-top: 174px; margin-left: 32px;"><div style="box-sizing: border-box; font-size: 0; text-align: left; color: #1c1a17; "><div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">MCP &amp; Orca connectors<br /><span style="font-size: 11px; color: light-dark(rgb(102, 102, 102), rgb(149, 149, 149));">.claude, .pi, orca · configured only</span></div></div></div></foreignObject><text x="32" y="171" fill="#1c1a17" font-family="Helvetica" font-size="12px" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"><tspan x="32" y="171">MCP &amp; Orca connectors</tspan><tspan x="32" y="185">.claude, .pi, orca · configured only</tspan></text></switch></g></g></g><g data-cell-id="place-audit"><g><rect x="320" y="0" width="285" height="235" rx="11.75" ry="11.75" fill="url(#csb-mx-pattern-hatch-150-_8c8c8c-_757575-100-900-75--4500-0)" stroke="#1c1a17" stroke-width="1.5" pointer-events="all" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="place-audit-label"><g><rect x="338" y="14" width="145" height="26" fill="none" stroke="none" pointer-events="all"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe flex-start; width: 135px; height: 1px; padding-top: 27px; margin-left: 344px;"><div style="box-sizing: border-box; font-size: 0; text-align: left; color: #1c1a17; background-color: #ffffff; "><div style="display: inline-block; font-size: 14.5px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; background-color: light-dark(#ffffff, #121212); white-space: normal; word-wrap: normal; "><u><b>credential-audit</b></u></div></div></div></foreignObject><text x="344" y="31" fill="#1c1a17" font-family="Helvetica" font-size="15px" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));">credential-audit</text></switch></g></g></g><g data-cell-id="op-probe"><g><rect x="338" y="56" width="248" height="64" rx="8.96" ry="8.96" fill="#ffffff" stroke="#1c1a17" stroke-width="1.5" pointer-events="all" style="fill: light-dark(rgb(255, 255, 255), rgb(18, 18, 18)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe flex-start; width: 234px; height: 1px; padding-top: 88px; margin-left: 352px;"><div style="box-sizing: border-box; font-size: 0; text-align: left; color: #1c1a17; "><div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">audit.sh read-only probe<br /><span style="font-size: 11px; color: light-dark(rgb(102, 102, 102), rgb(149, 149, 149));">whitelisted verbs · zero API calls</span></div></div></div></foreignObject><text x="352" y="85" fill="#1c1a17" font-family="Helvetica" font-size="12px" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"><tspan x="352" y="85">audit.sh read-only probe</tspan><tspan x="352" y="99">whitelisted verbs · zero API calls</tspan></text></switch></g></g></g><g data-cell-id="op-table"><g><rect x="338" y="142" width="248" height="64" rx="8.96" ry="8.96" fill="#ffffff" stroke="#1c1a17" stroke-width="1.5" pointer-events="all" style="fill: light-dark(rgb(255, 255, 255), rgb(18, 18, 18)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe flex-start; width: 234px; height: 1px; padding-top: 174px; margin-left: 352px;"><div style="box-sizing: border-box; font-size: 0; text-align: left; color: #1c1a17; "><div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">4-table access report<br /><span style="font-size: 11px; color: light-dark(rgb(102, 102, 102), rgb(149, 149, 149));">identity, auth method, verified vs. not</span></div></div></div></foreignObject><text x="352" y="171" fill="#1c1a17" font-family="Helvetica" font-size="12px" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"><tspan x="352" y="171">4-table access report</tspan><tspan x="352" y="185">identity, auth method, verified vs. not</tspan></text></switch></g></g></g><g data-cell-id="place-live"><g><rect x="650" y="0" width="275" height="235" rx="11.75" ry="11.75" fill="url(#csb-mx-pattern-hatch-150-_8c8c8c-_757575-100-900-75--4500-0)" stroke="#1c1a17" stroke-width="1.5" pointer-events="all" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="place-live-label"><g><rect x="668" y="14" width="185" height="26" fill="none" stroke="none" pointer-events="all"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe flex-start; width: 175px; height: 1px; padding-top: 27px; margin-left: 674px;"><div style="box-sizing: border-box; font-size: 0; text-align: left; color: #1c1a17; background-color: #ffffff; "><div style="display: inline-block; font-size: 14.5px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; background-color: light-dark(#ffffff, #121212); white-space: normal; word-wrap: normal; "><u><b>Host logins (verified)</b></u></div></div></div></foreignObject><text x="674" y="31" fill="#1c1a17" font-family="Helvetica" font-size="15px" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));">Host logins (verified)</text></switch></g></g></g><g data-cell-id="op-cli"><g><rect x="668" y="56" width="238" height="64" rx="8.96" ry="8.96" fill="#ffffff" stroke="#1c1a17" stroke-width="1.5" pointer-events="all" style="fill: light-dark(rgb(255, 255, 255), rgb(18, 18, 18)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe flex-start; width: 224px; height: 1px; padding-top: 88px; margin-left: 682px;"><div style="box-sizing: border-box; font-size: 0; text-align: left; color: #1c1a17; "><div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">16 signed-in CLIs<br /><span style="font-size: 11px; color: light-dark(rgb(102, 102, 102), rgb(149, 149, 149));">gh, gt, gcloud, aws, kubectl, op</span></div></div></div></foreignObject><text x="682" y="85" fill="#1c1a17" font-family="Helvetica" font-size="12px" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"><tspan x="682" y="85">16 signed-in CLIs</tspan><tspan x="682" y="99">gh, gt, gcloud, aws, kubectl, op</tspan></text></switch></g></g></g><g data-cell-id="op-ssh"><g><rect x="668" y="142" width="238" height="64" rx="8.96" ry="8.96" fill="#ffffff" stroke="#1c1a17" stroke-width="1.5" pointer-events="all" style="fill: light-dark(rgb(255, 255, 255), rgb(18, 18, 18)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe flex-start; width: 224px; height: 1px; padding-top: 174px; margin-left: 682px;"><div style="box-sizing: border-box; font-size: 0; text-align: left; color: #1c1a17; "><div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">Git helper &amp; SSH agent<br /><span style="font-size: 11px; color: light-dark(rgb(102, 102, 102), rgb(149, 149, 149));">credential.helper + ssh-add -l</span></div></div></div></foreignObject><text x="682" y="171" fill="#1c1a17" font-family="Helvetica" font-size="12px" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"><tspan x="682" y="171">Git helper &amp; SSH agent</tspan><tspan x="682" y="185">credential.helper + ssh-add -l</tspan></text></switch></g></g></g><g data-cell-id="c1"><g><path d="M 256 88 L 328.82 88" fill="none" stroke="#1c1a17" stroke-width="1.5" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/><path d="M 336.32 88 L 328.82 91.75 L 328.82 84.25 Z" fill="#1c1a17" stroke="#1c1a17" stroke-width="1.5" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="c2"><g><path d="M 256 174 L 328.82 174" fill="none" stroke="#1c1a17" stroke-width="1.5" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/><path d="M 336.32 174 L 328.82 177.75 L 328.82 170.25 Z" fill="#1c1a17" stroke="#1c1a17" stroke-width="1.5" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="c3"><g><path d="M 668 88 L 595.18 88" fill="none" stroke="#1c1a17" stroke-width="1.5" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/><path d="M 587.68 88 L 595.18 84.25 L 595.18 91.75 Z" fill="#1c1a17" stroke="#1c1a17" stroke-width="1.5" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="c4"><g><path d="M 668 174 L 595.18 174" fill="none" stroke="#1c1a17" stroke-width="1.5" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/><path d="M 587.68 174 L 595.18 170.25 L 595.18 177.75 Z" fill="#1c1a17" stroke="#1c1a17" stroke-width="1.5" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="c5"><g><path d="M 462 120 L 462 132.82" fill="none" stroke="#1c1a17" stroke-width="1.5" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/><path d="M 462 140.32 L 458.25 132.82 L 465.75 132.82 Z" fill="#1c1a17" stroke="#1c1a17" stroke-width="1.5" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="risk-config"><g><rect x="0" y="270" width="275" height="54" rx="7.56" ry="7.56" fill="url(#csb-mx-pattern-cross-hatch-150-_8c8c8c-_757575-100-800-75--4500-0)" stroke="#1c1a17" stroke-width="1.5" pointer-events="all" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 273px; height: 1px; padding-top: 297px; margin-left: 1px;"><div style="box-sizing: border-box; font-size: 0; text-align: center; color: #1c1a17; background-color: #ffffff; "><div style="display: inline-block; font-size: 11.5px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; background-color: light-dark(#ffffff, #121212); white-space: normal; word-wrap: normal; "><i>Presence != permission; calling env tokens could mutate state</i></div></div></div></foreignObject><text x="138" y="293" fill="#1c1a17" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"><tspan x="138" y="293">Presence != permission; calling env tokens could</tspan><tspan x="138" y="307">mutate state</tspan></text></switch></g></g></g><g data-cell-id="risk-audit"><g><rect x="320" y="270" width="285" height="54" rx="7.56" ry="7.56" fill="url(#csb-mx-pattern-cross-hatch-150-_8c8c8c-_757575-100-800-75--4500-0)" stroke="#1c1a17" stroke-width="1.5" pointer-events="all" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 283px; height: 1px; padding-top: 297px; margin-left: 321px;"><div style="box-sizing: border-box; font-size: 0; text-align: center; color: #1c1a17; background-color: #ffffff; "><div style="display: inline-block; font-size: 11.5px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; background-color: light-dark(#ffffff, #121212); white-space: normal; word-wrap: normal; "><i>Blind spots: Keychain, ~/.aws &amp; ~/.kube files, cookies, .env</i></div></div></div></foreignObject><text x="463" y="293" fill="#1c1a17" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"><tspan x="463" y="293">Blind spots: Keychain, ~/.aws &amp; ~/.kube files, cookies,</tspan><tspan x="463" y="307">.env</tspan></text></switch></g></g></g><g data-cell-id="risk-live"><g><rect x="650" y="270" width="275" height="54" rx="7.56" ry="7.56" fill="url(#csb-mx-pattern-cross-hatch-150-_8c8c8c-_757575-100-800-75--4500-0)" stroke="#1c1a17" stroke-width="1.5" pointer-events="all" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 273px; height: 1px; padding-top: 297px; margin-left: 651px;"><div style="box-sizing: border-box; font-size: 0; text-align: center; color: #1c1a17; background-color: #ffffff; "><div style="display: inline-block; font-size: 11.5px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; background-color: light-dark(#ffffff, #121212); white-space: normal; word-wrap: normal; "><i>Unknown binaries aren't safe (--help triggered a self-update)</i></div></div></div></foreignObject><text x="788" y="293" fill="#1c1a17" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"><tspan x="788" y="293">Unknown binaries aren't safe (--help triggered a</tspan><tspan x="788" y="307">self-update)</tspan></text></switch></g></g></g><g data-cell-id="d1"><g transform="translate(0.5,0.5)"><path d="M 137.5 235 L 137.5 270" fill="none" stroke="#1c1a17" stroke-width="1.25" stroke-miterlimit="10" stroke-dasharray="5 5" pointer-events="stroke" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="d2"><g transform="translate(0.5,0.5)"><path d="M 462.5 235 L 462.5 270" fill="none" stroke="#1c1a17" stroke-width="1.25" stroke-miterlimit="10" stroke-dasharray="5 5" pointer-events="stroke" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="d3"><g transform="translate(0.5,0.5)"><path d="M 787.5 235 L 787.5 270" fill="none" stroke="#1c1a17" stroke-width="1.25" stroke-miterlimit="10" stroke-dasharray="5 5" pointer-events="stroke" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="key-lbl"><g><rect x="0" y="346" width="38" height="24" fill="none" stroke="none" pointer-events="all"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe flex-start; width: 1px; height: 1px; padding-top: 358px; margin-left: 2px;"><div style="box-sizing: border-box; font-size: 0; text-align: left; color: #1c1a17; "><div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: nowrap; "><b>Key</b></div></div></div></foreignObject><text x="2" y="362" fill="#1c1a17" font-family="Helvetica" font-size="12px" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));">Key</text></switch></g></g></g><g data-cell-id="key-s1"><g transform="translate(0.5,0.5)"><rect x="42" y="347" width="32" height="20" rx="4" ry="4" fill="url(#csb-mx-pattern-hatch-125-_8c8c8c-_757575-100-600-63--4500-0)" stroke="#1c1a17" stroke-width="1.25" pointer-events="all" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="key-t1"><g><rect x="82" y="345" width="175" height="24" fill="none" stroke="none" pointer-events="all"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe flex-start; width: 1px; height: 1px; padding-top: 357px; margin-left: 84px;"><div style="box-sizing: border-box; font-size: 0; text-align: left; color: #1c1a17; "><div style="display: inline-block; font-size: 11.5px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: nowrap; ">place: surface or audit stage</div></div></div></foreignObject><text x="84" y="360" fill="#1c1a17" font-family="Helvetica" font-size="12px" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));">place: surface or audit stage</text></switch></g></g></g><g data-cell-id="key-s2"><g transform="translate(0.5,0.5)"><rect x="265" y="347" width="32" height="20" rx="4" ry="4" fill="#ffffff" stroke="#1c1a17" stroke-width="1.25" pointer-events="all" style="fill: light-dark(rgb(255, 255, 255), rgb(18, 18, 18)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="key-t2"><g><rect x="305" y="345" width="180" height="24" fill="none" stroke="none" pointer-events="all"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe flex-start; width: 1px; height: 1px; padding-top: 357px; margin-left: 307px;"><div style="box-sizing: border-box; font-size: 0; text-align: left; color: #1c1a17; "><div style="display: inline-block; font-size: 11.5px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: nowrap; ">operation: what audit.sh checks</div></div></div></foreignObject><text x="307" y="360" fill="#1c1a17" font-family="Helvetica" font-size="12px" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));">operation: what audit.sh checks</text></switch></g></g></g><g data-cell-id="key-s3"><g transform="translate(0.5,0.5)"><rect x="495" y="347" width="32" height="20" rx="4" ry="4" fill="url(#csb-mx-pattern-cross-hatch-125-_8c8c8c-_757575-100-600-63--4500-0)" stroke="#1c1a17" stroke-width="1.25" pointer-events="all" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="key-t3"><g><rect x="535" y="345" width="170" height="24" fill="none" stroke="none" pointer-events="all"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe flex-start; width: 1px; height: 1px; padding-top: 357px; margin-left: 537px;"><div style="box-sizing: border-box; font-size: 0; text-align: left; color: #1c1a17; "><div style="display: inline-block; font-size: 11.5px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: nowrap; ">blind spot or safety boundary</div></div></div></foreignObject><text x="537" y="360" fill="#1c1a17" font-family="Helvetica" font-size="12px" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));">blind spot or safety boundary</text></switch></g></g></g><g data-cell-id="key-arr"><g><path d="M 715 357 L 740.82 357" fill="none" stroke="#1c1a17" stroke-width="1.5" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/><path d="M 748.32 357 L 740.82 360.75 L 740.82 353.25 Z" fill="#1c1a17" stroke="#1c1a17" stroke-width="1.5" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212)); stroke: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));"/></g></g><g data-cell-id="key-t4"><g><rect x="758" y="345" width="165" height="24" fill="none" stroke="none" pointer-events="all"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe flex-start; width: 1px; height: 1px; padding-top: 357px; margin-left: 760px;"><div style="box-sizing: border-box; font-size: 0; text-align: left; color: #1c1a17; "><div style="display: inline-block; font-size: 11.5px; font-family: Helvetica; color: light-dark(#1c1a17, #d8d6d4); line-height: 1.2; pointer-events: all; white-space: nowrap; ">flow: read-only evidence</div></div></div></foreignObject><text x="760" y="360" fill="#1c1a17" font-family="Helvetica" font-size="12px" style="fill: light-dark(rgb(28, 26, 23), rgb(216, 214, 212));">flow: read-only evidence</text></switch></g></g></g></g></g></g><switch><g requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"/><a transform="translate(0,-5)" xlink:href="https://www.drawio.com/doc/faq/svg-export-text-problems" target="_blank"><text text-anchor="middle" font-size="10px" x="50%" y="100%">Text is not SVG - cannot display</text></a></switch></svg>
+        <div class="diagram-caption">
+          <span>Figure 2 · credential-audit breadboard: configured vs. verified access (draw.io SVG · shades of gray &amp; hatching)</span>
+          <span id="csb-indicator">All surfaces &amp; safety boundaries active</span>
+        </div>
+      </div>
+
+      <div class="step-detail">
+        <div class="step-detail-top">
+          <div class="step-detail-title" id="as-title">Full audit: separate possible access from verified live logins</div>
+          <div class="step-detail-sha" id="as-sha">scaryPonens/agent-skills · skills/credential-audit/audit.sh</div>
+        </div>
+        <div class="step-cols">
+          <div class="step-col">
+            <h4>How audit.sh inspects it</h4>
+            <p id="as-how">Scans env variable names, MCP/Orca config files, 16 whitelisted CLI identity commands, and SSH agent keys—producing four Markdown tables with zero secret values printed.</p>
+          </div>
+          <div class="step-col">
+            <h4>What the result actually proves</h4>
+            <p id="as-proves">Draws a hard line between <strong>unverified</strong> configuration (an env var or MCP entry exists) and <strong>verified</strong> authority (a CLI confirmed a live signed-in account right now).</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <hr class="rule" id="bites" />
+
+    <!-- SECTION 04 -->
+    <section>
+      <div class="kicker">04 / Where It Still Bites</div>
+      <h2 class="sec-title">Three receipts from building and running the audit.</h2>
+
+      <div class="prose">
+        <p>
+          Running that first audit—and having the bot package the result into a public repository—surfaced three sharp edges you only notice in real use:
+        </p>
+        <p>
+          <strong>1. Even <code>--help</code> is not guaranteed read-only.</strong> During the initial pass, probing an internal deploy CLI with <code>--help</code> caused the binary to silently self-update on disk. Arbitrary CLIs on <code>PATH</code> cannot be treated as side-effect-free; <code>audit.sh</code> only runs a fixed whitelist of known identity subcommands (<code>gh auth status</code>, <code>aws sts get-caller-identity</code>, <code>gcloud auth list</code>) and skips everything else.
+        </p>
+        <p>
+          <strong>2. Delegated <code>gh</code> means delegated defaults.</strong> When I chose to publish <code>credential-audit</code> to a public repository rather than an internal skills branch, the bot created <a href="https://github.com/scaryPonens/agent-skills" target="_blank" rel="noopener noreferrer"><code>scaryPonens/agent-skills</code></a> through my signed-in <code>gh</code> CLI—and picked an <code>MIT</code> license on its own without asking first, noting afterward that I could change it. Harmless on a small shell skill; a crisp illustration of what “acting on your behalf” grants whenever a parameter goes unspecified.
+        </p>
+        <p>
+          <strong>3. Presence is not permission, and shell audits have a floor.</strong> Seeing <code>GITHUB_TOKEN</code> in <code>env</code> or a server in <code>.mcp.json</code> proves only <em>potential</em> access—an expired token looks identical when you refuse to call the API. Meanwhile, OS Keychain items, saved browser cookies, <code>.env</code> files, and raw credential files (<code>~/.aws/credentials</code>, <code>~/.kube/config</code>, <code>~/.netrc</code>) remain deliberate blind spots that the report names explicitly rather than scraping.
+        </p>
+      </div>
+    </section>
+
+    <hr class="rule" id="check" />
+
+    <!-- SECTION 05 -->
+    <section>
+      <div class="kicker">05 / Check Yourself</div>
+      <h2 class="sec-title">Who is acting—and what is actually verified?</h2>
+
+      <div class="prose">
+        <p>
+          Test the boundary across identity modes and audit evidence on each case below.
+        </p>
+      </div>
+
+      <div class="quiz-list">
+        <div class="quiz-card" data-answer="bot">
+          <div class="quiz-q">1. An Orca bot wakes on a pull-request comment and posts a progress reply in that same thread, or posts a status update into a team Slack channel.</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-choice="owner" onclick="pickQuiz(this, 'owner')">Acts under your personal login</button>
+            <button class="quiz-opt" data-choice="bot" onclick="pickQuiz(this, 'bot')">Speaks as the bot itself</button>
+            <button class="quiz-opt" data-choice="unverified" onclick="pickQuiz(this, 'unverified')">Unverified env token</button>
+            <button class="quiz-opt" data-choice="blind" onclick="pickQuiz(this, 'blind')">Outside bot reach</button>
+          </div>
+          <div class="quiz-explain" data-right="<strong>Speaks as the bot itself.</strong> Conversational replies where woken (<code>orca bot reply</code>) and Slack posts (<code>orca slack</code>) use the bot’s own identity so teammates never mistake bot output for you—and never get duplicate replies under two names."></div>
+        </div>
+
+        <div class="quiz-card" data-answer="unverified">
+          <div class="quiz-q">2. <code>audit.sh</code> finds <code>SLACK_BOT_TOKEN</code> in the shell environment and a Notion server listed inside <code>.claude.json</code>.</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-choice="verified" onclick="pickQuiz(this, 'verified')">Verified live write access</button>
+            <button class="quiz-opt" data-choice="unverified" onclick="pickQuiz(this, 'unverified')">Possible access · marked unverified</button>
+            <button class="quiz-opt" data-choice="blind" onclick="pickQuiz(this, 'blind')">Uninspected blind spot</button>
+            <button class="quiz-opt" data-choice="none" onclick="pickQuiz(this, 'none')">Ignored by audit.sh</button>
+          </div>
+          <div class="quiz-explain" data-right="<strong>Possible access · marked unverified.</strong> <code>credential-audit</code> records variable and server names without reading secret values or calling remote APIs, so configured entries stay explicitly unverified until a tool call proves them."></div>
+        </div>
+
+        <div class="quiz-card" data-answer="owner">
+          <div class="quiz-q">3. After you say “go ahead,” an Orca bot runs <code>gh repo create</code> or pushes a branch and opens a pull request from a worker worktree.</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-choice="bot" onclick="pickQuiz(this, 'bot')">Runs under a sandboxed bot GitHub user</button>
+            <button class="quiz-opt" data-choice="owner" onclick="pickQuiz(this, 'owner')">Executes as you via host gh / SSH logins</button>
+            <button class="quiz-opt" data-choice="unverified" onclick="pickQuiz(this, 'unverified')">Blocked by OS sandbox</button>
+            <button class="quiz-opt" data-choice="tmux" onclick="pickQuiz(this, 'tmux')">Requires an open terminal tab</button>
+          </div>
+          <div class="quiz-explain" data-right="<strong>Executes as you via host gh / SSH logins.</strong> GitHub and git operations act on your behalf using the machine’s signed-in credentials—which is why <code>SOUL.md</code> gates mutations on explicit approval and why unspecified flags (like an MIT license) carry your name."></div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="foot">
+      <span>Have a counterpoint or a sharper boundary? Reply on <a href="https://www.linkedin.com/in/reubenpeterpaul/" target="_blank" rel="noopener noreferrer">LinkedIn</a> or by <a href="mailto:reuben.peterpaul@protonmail.com">email</a>.</span>
+      <span><a href="/">← Back to reubenpeterpaul.com</a></span>
+    </footer>
+  </main>
+
+  <script>
+    function toggleTheme() {
+      var root = document.documentElement;
+      var isDark = root.classList.toggle('dark');
+      try { localStorage.setItem('darkMode', isDark ? 'true' : 'false'); } catch (e) {}
+    }
+
+    /* Figure 1: Session Harness vs. Persistent Orca Bot */
+    var leftHvb = ['left-frame','left-title','l-you','l-chat','l-shell','l-stop','le1','le2','le3'];
+    var rightHvb = ['right-frame','right-title','r-wake','r-state','r-rules','r-self','r-owner','re1','re2','re3','re4'];
+
+    var modelCopy = {
+      both: {
+        status: 'Showing both runtime models',
+        state: '<strong>Claude Code:</strong> In transcript; auto-compacted when full.<br><strong>Orca bot:</strong> Items, <code>MEMORY.md</code> &amp; GitHub; chat isn’t auto-summarized.',
+        wake: '<strong>Claude Code:</strong> While your terminal session stays open.<br><strong>Orca bot:</strong> Direct chat <em>or</em> one-shot event wakes when unattended.',
+        id: '<strong>Claude Code:</strong> Always your shell identity.<br><strong>Orca bot:</strong> Speaks as itself in chat/Slack; executes work as you.'
+      },
+      harness: {
+        status: 'Highlighting A · Session harness (Claude Code)',
+        state: '<strong>Scrollback-bound.</strong> Long sessions silently summarize earlier context; closing the pane ends the working state.',
+        wake: '<strong>Human-driven.</strong> Runs while you sit in the loop watching tool calls stream past in real time.',
+        id: '<strong>Implicit shell inheritance.</strong> Every CLI call runs as you, gated primarily by you watching the terminal.'
+      },
+      bot: {
+        status: 'Highlighting B · Persistent Orca bot',
+        state: '<strong>Externalized.</strong> Open commitments live in Items (<code>In progress</code> / <code>Waiting</code> / <code>Needs you</code>) and <code>MEMORY.md</code>.',
+        wake: '<strong>Event-driven.</strong> Sleeps at zero cost until a PR check, review, webhook, or chat message wakes it.',
+        id: '<strong>Explicitly split.</strong> Converses under its own bot identity; executes GitHub, Linear, and CLI work on your behalf.'
+      }
+    };
+
+    function setModel(mode, btn) {
+      document.querySelectorAll('[aria-label="Harness vs bot comparison"] .seg-btn').forEach(function(b) {
+        b.classList.remove('active');
+      });
+      if (btn) btn.classList.add('active');
+
+      var svg = document.getElementById('svg-hvb');
+      leftHvb.concat(rightHvb).forEach(function(id) {
+        var el = svg.querySelector('[data-cell-id="' + id + '"]');
+        if (!el) return;
+        var dim = (mode === 'harness' && rightHvb.indexOf(id) !== -1) ||
+                  (mode === 'bot' && leftHvb.indexOf(id) !== -1);
+        el.classList.toggle('is-dimmed', dim);
+      });
+
+      var c = modelCopy[mode];
+      document.getElementById('hvb-status').textContent = c.status;
+      document.getElementById('m-state').innerHTML = c.state;
+      document.getElementById('m-wake').innerHTML = c.wake;
+      document.getElementById('m-id').innerHTML = c.id;
+    }
+
+    /* Section 02: Identity Action Inspector */
+    var identities = {
+      slack: {
+        title: 'Posting or replying in a Slack channel',
+        badge: 'Mode · Speaks as bot',
+        ownerMode: false,
+        who: '<strong>The bot’s own Slack identity</strong> (name + bot badge)—never spoofed as a message typed by you.',
+        cred: '<code>orca slack post</code> via Orca’s connected Slack bot token, scoped to linked workspaces.',
+        guard: '<code>SOUL.md</code> blocks unapproved external posts; if a channel name matches multiple workspaces, the bot asks you which one.'
+      },
+      waking: {
+        title: 'Answering in the PR or thread that woke it',
+        badge: 'Mode · Speaks as bot',
+        ownerMode: false,
+        who: '<strong>The bot itself</strong> in that thread—never answering twice under both bot and personal accounts.',
+        cred: '<code>orca bot reply</code> (with <code>--file</code> or <code>--note path:line</code>), routed by Orca back to the waking thread.',
+        guard: 'Runtime rule forbids calling <code>gh pr comment</code> or <code>orca slack</code> on the waking thread to prevent split-identity duplicates.'
+      },
+      github: {
+        title: 'Opening PRs, editing labels, or creating repos',
+        badge: 'Mode · Acts on your behalf',
+        ownerMode: true,
+        who: '<strong>Your GitHub user</strong> (with <em>“asked by &lt;name&gt; via &lt;Bot&gt;”</em> appended on comments written for others).',
+        cred: 'Host <code>gh</code> CLI and SSH agent signed in as you—verified live by <code>gh auth status</code>.',
+        guard: '<code>SOUL.md</code> requires owner go-ahead before mutating external state; unspecified defaults (like choosing an MIT license) still land under your name.'
+      },
+      hostcli: {
+        title: 'Running cloud, stack, or cluster CLIs on the host',
+        badge: 'Mode · Ambient host authority',
+        ownerMode: true,
+        who: '<strong>Your workstation principal</strong> in AWS, GCP, Kubernetes, Graphite, or 1Password.',
+        cred: 'Whatever ambient CLI sessions (<code>gcloud</code>, <code>aws</code>, <code>kubectl</code>, <code>gt</code>) are signed in on the machine.',
+        guard: 'No automatic OS isolation—which is why auditing signed-in CLIs and keeping read-first rules in <code>SOUL.md</code> matters.'
+      }
+    };
+
+    function setIdentity(key, btn) {
+      document.querySelectorAll('[aria-label="Identity action selector"] .seg-btn').forEach(function(b) {
+        b.classList.remove('active');
+      });
+      if (btn) btn.classList.add('active');
+
+      var item = identities[key];
+      document.getElementById('id-title').textContent = item.title;
+      var badge = document.getElementById('id-badge');
+      badge.textContent = item.badge;
+      badge.classList.toggle('owner-mode', item.ownerMode);
+      document.getElementById('id-who').innerHTML = item.who;
+      document.getElementById('id-cred').innerHTML = item.cred;
+      document.getElementById('id-guard').innerHTML = item.guard;
+    }
+
+    /* Figure 2: credential-audit 6-pill surface scrubber */
+    var allCsbCells = [
+      'place-config','place-config-label','op-env','op-mcp',
+      'place-audit','place-audit-label','op-probe','op-table',
+      'place-live','place-live-label','op-cli','op-ssh',
+      'c1','c2','c3','c4','c5',
+      'risk-config','risk-audit','risk-live','d1','d2','d3'
+    ];
+
+    var auditSteps = [
+      {
+        indicator: 'All surfaces & safety boundaries active',
+        title: 'Full audit: separate possible access from verified live logins',
+        sha: 'scaryPonens/agent-skills · skills/credential-audit/audit.sh',
+        active: allCsbCells,
+        how: 'Scans env variable names, MCP/Orca config files, 16 whitelisted CLI identity commands, and SSH agent keys—producing four Markdown tables with zero secret values printed.',
+        proves: 'Draws a hard line between <strong>unverified</strong> configuration (an env var or MCP entry exists) and <strong>verified</strong> authority (a CLI confirmed a live signed-in account right now).'
+      },
+      {
+        indicator: 'Surface 01 · Environment variable names',
+        title: '01 · Match credential-shaped env names without reading values',
+        sha: 'env | cut -d= -f1 · marked UNVERIFIED',
+        active: ['place-config','place-config-label','op-env','place-audit','place-audit-label','op-probe','op-table','c1','c5','risk-config','d1'],
+        how: 'Filters variable names matching token, secret, key, password, or auth—never echoing values and never calling an API to test them.',
+        proves: 'Only that access is <strong>possible</strong>. A stale or revoked token looks identical by name, so every env match is labeled unverified.'
+      },
+      {
+        indicator: 'Surface 02 · MCP & Orca connectors',
+        title: '02 · Inventory configured servers across harnesses & Orca',
+        sha: '.claude.json, .cursor/mcp.json, .pi/agent/*, orca bot connectors',
+        active: ['place-config','place-config-label','op-mcp','place-audit','place-audit-label','op-table','c2','risk-config','d1'],
+        how: 'Reads server names from Claude Code, Cursor, Pi, and local .mcp.json configs alongside orca bot connectors.',
+        proves: 'Shows which external services are wired in—and for Orca connectors, whether each acts as you or the bot—while keeping uncalled MCP servers marked unverified.'
+      },
+      {
+        indicator: 'Surface 03 · Whitelisted CLI logins',
+        title: '03 · Verify live workstation accounts with safe read-only verbs',
+        sha: 'gh, gt, gcloud, aws, kubectl, op, vercel, fly… · VERIFIED',
+        active: ['place-live','place-live-label','op-cli','place-audit','place-audit-label','op-probe','op-table','c3','c5','risk-live','d3'],
+        how: 'Runs a fixed list of 16 non-mutating identity checks (such as gh auth status and aws sts get-caller-identity), skipping any binary not on the list.',
+        proves: 'Confirms the exact username, account, or cluster context currently active on the machine—the real “on your behalf” footprint—without risking unknown CLI side effects.'
+      },
+      {
+        indicator: 'Surface 04 · Git helper & SSH agent',
+        title: '04 · Check push/fetch transport credentials directly',
+        sha: 'git config credential.helper + ssh-add -l',
+        active: ['place-live','place-live-label','op-ssh','place-audit','place-audit-label','op-table','c4'],
+        how: 'Reads the configured global Git credential helper and lists key comments loaded in the running SSH agent.',
+        proves: 'Verifies whether git fetch, push, or submodule clones can authenticate silently even if gh or glab were signed out.'
+      },
+      {
+        indicator: 'Surface 05 · Explicit blind spots',
+        title: '05 · Name what a safe shell audit refuses to scrape',
+        sha: 'Keychain, ~/.aws/credentials, ~/.kube/config, cookies, .env',
+        active: ['place-audit','place-audit-label','op-table','risk-config','risk-audit','risk-live','d1','d2','d3'],
+        how: 'Deliberately avoids reading raw credential files on disk, unlocking OS Keychain entries, or inspecting browser profile databases.',
+        proves: 'Prevents an audit skill from becoming a secret-harvesting script—stating clearly at the bottom of every report what still sits outside its view.'
+      }
+    ];
+
+    function setAuditStep(idx, btn) {
+      document.querySelectorAll('.step-pill').forEach(function(b) { b.classList.remove('active'); });
+      if (btn) btn.classList.add('active');
+
+      var s = auditSteps[idx];
+      var svg = document.getElementById('svg-csb');
+      allCsbCells.forEach(function(id) {
+        var el = svg.querySelector('[data-cell-id="' + id + '"]');
+        if (!el) return;
+        el.classList.toggle('is-dimmed', s.active.indexOf(id) === -1);
+      });
+
+      document.getElementById('csb-indicator').textContent = s.indicator;
+      document.getElementById('as-title').textContent = s.title;
+      document.getElementById('as-sha').textContent = s.sha;
+      document.getElementById('as-how').innerHTML = s.how;
+      document.getElementById('as-proves').innerHTML = s.proves;
+    }
+
+    /* Section 05: Self-check quiz */
+    function pickQuiz(btn, choice) {
+      var card = btn.closest('.quiz-card');
+      var answer = card.getAttribute('data-answer');
+      card.querySelectorAll('.quiz-opt').forEach(function(b) {
+        b.classList.remove('picked-right', 'picked-other');
+      });
+      var exp = card.querySelector('.quiz-explain');
+      if (choice === answer) {
+        btn.classList.add('picked-right');
+        exp.innerHTML = '✓ ' + exp.getAttribute('data-right');
+      } else {
+        btn.classList.add('picked-other');
+        var rightBtn = card.querySelector('.quiz-opt[data-choice="' + answer + '"]');
+        if (rightBtn) rightBtn.classList.add('picked-right');
+        exp.innerHTML = 'Not quite — ' + exp.getAttribute('data-right');
+      }
+      exp.classList.add('visible');
+    }
+  </script>
+</body>
+</html>
