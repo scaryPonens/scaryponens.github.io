@@ -2,6 +2,7 @@ import {
   AmbientLight,
   BoxGeometry,
   BufferGeometry,
+  CylinderGeometry,
   DirectionalLight,
   EdgesGeometry,
   Euler,
@@ -529,13 +530,322 @@ export function buildDeskScene(materials) {
     pushSeg(inkVerts, deskEntry.x, deskEntry.y, deskEntry.z, 0, 0.22, -0.31)
   }
 
-  // 5. Ergonomic Wireless Mouse Silhouette on right side of desk mat
-  const msX = 1.06
+  // 5. Sculpted Logitech MX Master 4 Right-Hand Ergonomic Mouse on right side of desk mat
+  // Local mouse frame at (msX, msBaseY, msZ), rotated slightly inward toward typist:
+  // -Z = front click paddles, +Z = rear palm heel, -X = flared left thumb wing + thumb wheel, +X = sloped right flank
+  const msX = 1.09
+  const msBaseY = 0.016
   const msZ = 0.8
-  addStaticBox(materials.massHigh, msX, 0.046, msZ, 0.23, 0.064, 0.37, 0.04, -0.05, 0, 'ink')
-  addStaticBox(materials.massMid, msX, 0.082, msZ - 0.01, 0.19, 0.024, 0.26, 0.06, -0.05, 0, 'ink')
-  // Scroll wheel
-  addStaticBox(materials.massDeep, msX + 0.005, 0.096, msZ - 0.09, 0.028, 0.022, 0.068, 0, -0.05, 0, 'ink')
+  const msRotY = 0.1
+  const msQuat = new Quaternion().setFromEuler(new Euler(0, msRotY, 0))
+  const msOrigin = new Vector3(msX, msBaseY, msZ)
+  const msScale = 1.12
+  const msMatrix = new Matrix4().compose(msOrigin, msQuat, new Vector3(msScale, msScale, msScale))
+
+  const toMouseWorld = (lx, ly, lz) =>
+    new Vector3(lx * msScale, ly * msScale, lz * msScale).applyQuaternion(msQuat).add(msOrigin)
+
+  // 5a. Asymmetric Base Skirt with Signature Flared Lower-Left Thumb-Rest Wing
+  const buildFlatPlateXZ = (polyCW, yBottom, yTop) => {
+    const idx = polyCW.map((_, i) => i)
+    const tris = []
+    const cross2 = (a, b, c) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])
+    const inTri2 = (p, a, b, c) =>
+      cross2(a, b, p) >= 0 && cross2(b, c, p) >= 0 && cross2(c, a, p) >= 0
+    let guard = 0
+    while (idx.length > 3 && guard++ < 200) {
+      for (let i = 0; i < idx.length; i++) {
+        const i0 = idx[(i - 1 + idx.length) % idx.length]
+        const i1 = idx[i]
+        const i2 = idx[(i + 1) % idx.length]
+        const a = polyCW[i0]
+        const b = polyCW[i1]
+        const c = polyCW[i2]
+        if (cross2(a, b, c) <= 1e-7) continue
+        let ear = true
+        for (let j = 0; j < idx.length; j++) {
+          const ij = idx[j]
+          if (ij === i0 || ij === i1 || ij === i2) continue
+          if (inTri2(polyCW[ij], a, b, c)) {
+            ear = false
+            break
+          }
+        }
+        if (ear) {
+          tris.push([i0, i1, i2])
+          idx.splice(i, 1)
+          break
+        }
+      }
+    }
+    tris.push([idx[0], idx[1], idx[2]])
+
+    const pos = []
+    const addTri = (ax, ay, az, bx, by, bz, cx, cy, cz) => {
+      pos.push(ax, ay, az, bx, by, bz, cx, cy, cz)
+    }
+    for (const [i0, i1, i2] of tris) {
+      const [x0, z0] = polyCW[i0]
+      const [x1, z1] = polyCW[i1]
+      const [x2, z2] = polyCW[i2]
+      addTri(x0, yTop, z0, x2, yTop, z2, x1, yTop, z1)
+      addTri(x0, yBottom, z0, x1, yBottom, z1, x2, yBottom, z2)
+    }
+    for (let i = 0; i < polyCW.length; i++) {
+      const [x0, z0] = polyCW[i]
+      const [x1, z1] = polyCW[(i + 1) % polyCW.length]
+      addTri(x0, yBottom, z0, x0, yTop, z0, x1, yTop, z1)
+      addTri(x0, yBottom, z0, x1, yTop, z1, x1, yBottom, z1)
+    }
+    const g = trackGeo(new BufferGeometry())
+    g.setAttribute('position', new Float32BufferAttribute(pos, 3))
+    g.computeVertexNormals()
+    return g
+  }
+
+  // CW footprint in (lx, lz): flared lower-left thumb wing on -X, tapered nose at -Z, ergonomic right curve on +X
+  const mxBaseFootprint = [
+    [-0.098, -0.218], // front-left nose
+    [0.015, -0.226],  // center nose tip
+    [0.104, -0.212],  // front-right nose
+    [0.128, -0.085],  // right fore flank
+    [0.132, 0.055],   // right mid flank
+    [0.108, 0.175],   // rear-right heel
+    [0.032, 0.228],   // rear heel apex
+    [-0.068, 0.215],  // rear-left heel
+    [-0.128, 0.162],  // thumb-wing rear sweep
+    [-0.192, 0.092],  // flared lower-left thumb-rest wing peak!
+    [-0.186, 0.005],  // thumb-rest wing fore lip
+    [-0.122, -0.072], // thumb-wing neck tuck
+    [-0.108, -0.155], // left fore flank
+  ]
+  const mxBaseGeo = buildFlatPlateXZ(mxBaseFootprint, 0.0, 0.018)
+  const mxBaseEdges = trackGeo(new EdgesGeometry(mxBaseGeo, 15))
+  const mxBaseMesh = new Mesh(mxBaseGeo, materials.massDeep)
+  mxBaseMesh.applyMatrix4(msMatrix)
+  mxBaseMesh.updateMatrix()
+  deskGroup.add(mxBaseMesh)
+  pushTransformedEdges(mxBaseEdges.attributes.position, inkVerts, mxBaseMesh.matrix)
+
+  // Subtle Gesture button accent line on the flared lower-left thumb-rest wing
+  const gestA = toMouseWorld(-0.168, 0.02, 0.068)
+  const gestB = toMouseWorld(-0.164, 0.02, 0.022)
+  pushSeg(inkVerts, gestA.x, gestA.y, gestA.z, gestB.x, gestB.y, gestB.z)
+
+  // 5b. Multi-Station Lofted Asymmetric Arched Palm Dome (high left-biased crest banking down to right)
+  // Cross-section points in CW (lx, ly) order from rear heel (z = +0.22) forward to button collar (z = -0.048)
+  const domeStations = [
+    {
+      z: 0.218,
+      pts: [
+        [-0.062, 0.018],
+        [-0.068, 0.028],
+        [-0.058, 0.042],
+        [-0.015, 0.048],
+        [0.038, 0.044],
+        [0.078, 0.032],
+        [0.082, 0.018],
+      ],
+    },
+    {
+      z: 0.165,
+      pts: [
+        [-0.098, 0.018],
+        [-0.102, 0.046],
+        [-0.092, 0.076],
+        [-0.026, 0.092],
+        [0.048, 0.078],
+        [0.104, 0.05],
+        [0.112, 0.018],
+      ],
+    },
+    {
+      z: 0.09,
+      pts: [
+        [-0.104, 0.018],
+        [-0.096, 0.052], // concave thumb cove tuck!
+        [-0.114, 0.088], // upper-left thumb ridge overhang!
+        [-0.032, 0.118], // tall left-biased ergonomic palm peak!
+        [0.052, 0.098],  // banking right slope
+        [0.118, 0.06],
+        [0.126, 0.018],
+      ],
+    },
+    {
+      z: 0.015,
+      pts: [
+        [-0.106, 0.018],
+        [-0.094, 0.052], // concave thumb cove
+        [-0.118, 0.086], // upper-left thumb ridge housing side buttons & thumb wheel
+        [-0.03, 0.116],  // ergonomic crest
+        [0.054, 0.096],
+        [0.118, 0.058],
+        [0.126, 0.018],
+      ],
+    },
+    {
+      z: -0.052,
+      pts: [
+        [-0.104, 0.018],
+        [-0.098, 0.048],
+        [-0.11, 0.078],
+        [-0.026, 0.098],
+        [0.05, 0.084],
+        [0.112, 0.052],
+        [0.122, 0.018],
+      ],
+    },
+  ]
+
+  const buildLoftedDome = (stations) => {
+    const pos = []
+    const addTri = (ax, ay, az, bx, by, bz, cx, cy, cz) => {
+      pos.push(ax, ay, az, bx, by, bz, cx, cy, cz)
+    }
+    const ringLen = stations[0].pts.length
+
+    for (let s = 0; s < stations.length - 1; s++) {
+      const st0 = stations[s]
+      const st1 = stations[s + 1]
+      for (let p = 0; p < ringLen; p++) {
+        const pn = (p + 1) % ringLen
+        const [ax, ay] = st0.pts[p]
+        const [bx, by] = st0.pts[pn]
+        const [cx, cy] = st1.pts[p]
+        const [dx, dy] = st1.pts[pn]
+        addTri(ax, ay, st0.z, bx, by, st0.z, dx, dy, st1.z)
+        addTri(ax, ay, st0.z, dx, dy, st1.z, cx, cy, st1.z)
+      }
+    }
+
+    // Rear cap (+Z normal) & front collar cap (-Z normal)
+    const capStation = (st, flip) => {
+      let cx = 0
+      let cy = 0
+      for (const [px, py] of st.pts) {
+        cx += px
+        cy += py
+      }
+      cx /= ringLen
+      cy /= ringLen
+      for (let p = 0; p < ringLen; p++) {
+        const pn = (p + 1) % ringLen
+        const [x0, y0] = st.pts[p]
+        const [x1, y1] = st.pts[pn]
+        if (flip) {
+          addTri(cx, cy, st.z, x1, y1, st.z, x0, y0, st.z)
+        } else {
+          addTri(cx, cy, st.z, x0, y0, st.z, x1, y1, st.z)
+        }
+      }
+    }
+    capStation(stations[0], true)
+    capStation(stations[stations.length - 1], false)
+
+    const g = trackGeo(new BufferGeometry())
+    g.setAttribute('position', new Float32BufferAttribute(pos, 3))
+    g.computeVertexNormals()
+    return g
+  }
+
+  const mxDomeGeo = buildLoftedDome(domeStations)
+  const mxDomeMesh = new Mesh(mxDomeGeo, materials.massMid)
+  mxDomeMesh.applyMatrix4(msMatrix)
+  mxDomeMesh.updateMatrix()
+  deskGroup.add(mxDomeMesh)
+
+  // Crisp sculptural feature seams along the MX Master 4 palm dome (thumb ridge, dorsal crest, right flank, & front/rear arches)
+  for (const ridgeIdx of [1, 2, 3, 5]) {
+    const lineTarget = ridgeIdx === 1 ? mutedVerts : inkVerts
+    for (let s = 0; s < domeStations.length - 1; s++) {
+      const a = toMouseWorld(
+        domeStations[s].pts[ridgeIdx][0],
+        domeStations[s].pts[ridgeIdx][1] + 0.001,
+        domeStations[s].z
+      )
+      const b = toMouseWorld(
+        domeStations[s + 1].pts[ridgeIdx][0],
+        domeStations[s + 1].pts[ridgeIdx][1] + 0.001,
+        domeStations[s + 1].z
+      )
+      pushSeg(lineTarget, a.x, a.y, a.z, b.x, b.y, b.z)
+    }
+  }
+  // Collar arch seam where palm dome meets the split click paddles + rear heel arch
+  for (const archStation of [domeStations[0], domeStations[domeStations.length - 1]]) {
+    for (let p = 1; p < archStation.pts.length - 1; p++) {
+      const a = toMouseWorld(archStation.pts[p][0], archStation.pts[p][1] + 0.001, archStation.z)
+      const b = toMouseWorld(archStation.pts[p + 1][0], archStation.pts[p + 1][1] + 0.001, archStation.z)
+      pushSeg(inkVerts, a.x, a.y, a.z, b.x, b.y, b.z)
+    }
+  }
+
+  // 5c. Sloping Split Left & Right Click Paddles + Center MagSpeed Channel
+  const addMousePart = (geo, edgesGeo, mat, lx, ly, lz, sx, sy, sz, rx = 0, ry = 0, rz = 0, edgeArr = inkVerts) => {
+    const localQuat = msQuat.clone().multiply(new Quaternion().setFromEuler(new Euler(rx, ry, rz)))
+    const wPos = toMouseWorld(lx, ly, lz)
+    const mesh = new Mesh(geo, mat)
+    mesh.position.copy(wPos)
+    mesh.quaternion.copy(localQuat)
+    mesh.scale.set(sx * msScale, sy * msScale, sz * msScale)
+    mesh.updateMatrix()
+    deskGroup.add(mesh)
+    if (edgesGeo) {
+      pushTransformedEdges(edgesGeo.attributes.position, edgeArr, mesh.matrix)
+    }
+    return mesh
+  }
+
+  // Fore under-chassis block beneath the split click paddles
+  addMousePart(boxGeo, boxEdges, materials.massDeep, 0.004, 0.032, -0.132, 0.205, 0.03, 0.16, -0.14, 0, -0.08, mutedVerts)
+
+  // Left click paddle (higher index-finger side, steeply sloped forward toward -Z)
+  addMousePart(boxGeo, boxEdges, materials.massHigh, -0.056, 0.064, -0.134, 0.078, 0.015, 0.164, -0.32, 0.02, -0.09, inkVerts)
+  // Right click paddle (banked lower on right side, steeply sloped forward toward -Z)
+  addMousePart(boxGeo, boxEdges, materials.massHigh, 0.062, 0.054, -0.132, 0.08, 0.015, 0.16, -0.32, -0.03, -0.17, inkVerts)
+
+  // 5d. Prominent Machined Top MagSpeed Scroll Wheel + Mode-Shift Button in Center Groove
+  const wheelCylGeo = trackGeo(new CylinderGeometry(0.5, 0.5, 1, 14))
+  const wheelCylEdges = trackGeo(new EdgesGeometry(wheelCylGeo, 20))
+  // Upright wheel cylinder (axis along local X -> rz = Math.PI / 2)
+  addMousePart(
+    wheelCylGeo,
+    wheelCylEdges,
+    materials.massHigh,
+    0.003,
+    0.074,
+    -0.132,
+    0.058,
+    0.024,
+    0.058,
+    0,
+    0,
+    Math.PI / 2,
+    inkVerts
+  )
+  // Mode-shift button behind MagSpeed wheel
+  addMousePart(boxGeo, boxEdges, materials.massHigh, 0.002, 0.089, -0.076, 0.022, 0.012, 0.03, -0.24, 0, -0.1, inkVerts)
+
+  // 5e. Signature Horizontal Thumb Scroll Wheel + Two Side Buttons on Upper-Left Thumb Ridge
+  // Horizontal barrel thumb wheel (cylinder axis along fore-aft Z -> rx = Math.PI / 2)
+  addMousePart(
+    wheelCylGeo,
+    wheelCylEdges,
+    materials.massHigh,
+    -0.112,
+    0.071,
+    -0.032,
+    0.034,
+    0.052,
+    0.034,
+    Math.PI / 2,
+    0.06,
+    0,
+    inkVerts
+  )
+  // Forward & Back side buttons tucked right behind the horizontal thumb wheel
+  addMousePart(boxGeo, boxEdges, materials.massHigh, -0.113, 0.064, 0.018, 0.018, 0.013, 0.034, 0, 0.05, 0.12, inkVerts)
+  addMousePart(boxGeo, boxEdges, materials.massHigh, -0.111, 0.062, 0.058, 0.018, 0.013, 0.034, 0, 0.05, 0.12, inkVerts)
 
   // 6. Closed Field Notebook & Technical Pen on left desk wing (nod to Field Notes)
   const nbX = -2.42
