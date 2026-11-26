@@ -62,7 +62,7 @@ function Radar() {
     <>
       <hr className="section-rule" />
       <section className="editorial-section" id="worth-looking-at" aria-labelledby="radar-heading">
-        <p className="section-kicker">02 / WORTH LOOKING AT</p>
+        <p className="section-kicker">01 / WORTH LOOKING AT</p>
         <h2 id="radar-heading" className="section-heading">Curated radar &amp; short whys.</h2>
         <div className="radar-list">
           {items.map((item) => {

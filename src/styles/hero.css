@@ -1,0 +1,523 @@
+/* Monochrome Ink Variables for Two-Act 3D Hero (Warm Paper & Gruvbox Dark Medium) */
+.hero-runway {
+  --hero-bg: #faf8f4;
+  --hero-surface-1: #f1ede6;
+  --hero-surface-2: #e5dfd3;
+  --hero-surface-3: #d8d2c7;
+  --hero-muted: #787067;
+  --hero-ink: #1c1a17;
+  --hero-plate-bg: rgba(250, 248, 244, 0.84);
+  --hero-icon-bg: rgba(241, 237, 230, 0.86);
+  --hero-icon-hover-bg: #e5dfd3;
+  /* Enforce strict monochrome ink discipline on all interactive states inside hero */
+  --color-accent: #1c1a17;
+
+  position: relative;
+  width: 100%;
+  height: 240vh;
+  background-color: var(--hero-bg);
+  color: var(--hero-ink);
+}
+
+.hero-runway + .content {
+  padding-top: 0.75rem;
+}
+
+:root.dark .hero-runway {
+  --hero-bg: #282828;
+  --hero-surface-1: #32302f;
+  --hero-surface-2: #3c3836;
+  --hero-surface-3: #504945;
+  --hero-muted: #a89984;
+  --hero-ink: #ebdbb2;
+  --hero-plate-bg: rgba(40, 40, 40, 0.8);
+  --hero-icon-bg: rgba(50, 48, 47, 0.88);
+  --hero-icon-hover-bg: #3c3836;
+  --color-accent: #ebdbb2;
+}
+
+.hero-stage {
+  position: sticky;
+  top: 0;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background-color: var(--hero-bg);
+  isolation: isolate;
+}
+
+/* WebGL Canvas Layer */
+.hero-webgl-wrap {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.28s ease;
+  pointer-events: none;
+}
+
+.hero-webgl-wrap.is-ready {
+  opacity: 1;
+}
+
+.hero-canvas-host,
+.hero-webgl-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Persistent Top Bar (REUBEN PETER-PAUL + DarkModeToggle) */
+.hero-topbar-shell {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  padding: 1.35rem clamp(1.25rem, 4vw, 3rem) 0.75rem;
+  pointer-events: none;
+}
+
+.hero-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.hero-topbar .site-kicker,
+.hero-topbar .theme-toggle {
+  pointer-events: auto;
+}
+
+.hero-topbar .site-kicker {
+  color: var(--hero-ink);
+  background: var(--hero-plate-bg);
+  padding: 0.3rem 0.58rem;
+  border: 1px solid var(--hero-surface-3);
+  border-radius: 2px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.hero-topbar .theme-toggle {
+  color: var(--hero-ink);
+  background: var(--hero-plate-bg);
+  border-color: var(--hero-surface-3);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.hero-topbar .theme-toggle:hover {
+  border-color: var(--hero-ink);
+  background: var(--hero-surface-2);
+  color: var(--hero-ink);
+}
+
+/* Act 1 Editorial Plate (Upper-Left Architectural Title Block) */
+.hero-editorial-overlay {
+  position: absolute;
+  top: 3.85rem;
+  left: clamp(1.25rem, 3.5vw, 2.75rem);
+  z-index: 4;
+  max-width: min(440px, calc(100vw - 2.5rem));
+  will-change: opacity, transform;
+}
+
+.hero-editorial-card {
+  background: var(--hero-plate-bg);
+  border: 1px solid var(--hero-surface-3);
+  border-radius: 2px;
+  padding: 1.05rem 1.3rem 1.15rem;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.hero-editorial-card .hero-title {
+  font-size: clamp(1.85rem, 3.6vw, 2.55rem);
+  margin-bottom: 0.7rem;
+  color: var(--hero-ink);
+}
+
+.hero-editorial-card .hero-lead {
+  font-size: 14.5px;
+  line-height: 1.48;
+  color: var(--hero-ink);
+  opacity: 0.92;
+  margin-bottom: 0.9rem;
+}
+
+.hero-editorial-card .hero-nav {
+  gap: 0.45rem 0.95rem;
+  font-size: 13px;
+}
+
+.hero-editorial-card .hero-nav a {
+  color: var(--hero-ink);
+  text-decoration-color: var(--hero-muted);
+}
+
+.hero-editorial-card .hero-nav a:hover {
+  color: var(--hero-ink);
+  text-decoration-color: var(--hero-ink);
+  text-decoration-thickness: 1.5px;
+}
+
+/* Reduced-Motion Direct Desktop Access Strip */
+.hero-reduced-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--hero-surface-3);
+}
+
+.hero-reduced-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.42rem 0.72rem;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--hero-ink);
+  background: var(--hero-surface-1);
+  border: 1px solid var(--hero-muted);
+  border-radius: 2px;
+  text-decoration: none;
+}
+
+.hero-reduced-btn:hover {
+  background: var(--hero-surface-2);
+  border-color: var(--hero-ink);
+}
+
+.hero-reduced-btn .desktop-glyph-svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Quiet Scroll ↓ Indicator */
+.hero-scroll-cue {
+  position: absolute;
+  bottom: 1.45rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  pointer-events: none;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--hero-ink);
+  background: var(--hero-plate-bg);
+  border: 1px solid var(--hero-surface-3);
+  border-radius: 2px;
+  padding: 0.32rem 0.72rem;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  will-change: opacity;
+}
+
+/* Act 2: Crisp Accessible HTML/SVG Layer inside the 49" Curved Monitor */
+.hero-monitor-screen {
+  position: absolute;
+  z-index: 4;
+  opacity: 0;
+  pointer-events: none;
+  overflow: hidden;
+  container-type: size;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--hero-ink);
+  will-change: opacity, left, top, width, height;
+}
+
+.hero-monitor-screen.is-fallback-bezel {
+  border: 1.5px solid var(--hero-ink);
+  background: var(--hero-surface-1);
+  border-radius: 4px;
+}
+
+/* Ambient Floating Monochrome Tooling Logos (Orca, Pi, Obsidian, Antigravity) */
+.monitor-ambient-logos {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.floating-tool {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--hero-ink);
+  opacity: 0.68;
+  will-change: transform;
+}
+
+.floating-tool-svg {
+  display: block;
+  width: clamp(15px, 3.6cqw, 36px);
+  height: clamp(15px, 3.6cqw, 36px);
+}
+
+.floating-orca .floating-tool-svg {
+  width: clamp(18px, 4.2cqw, 42px);
+  height: clamp(14px, 3.4cqw, 34px);
+}
+
+.floating-pi .floating-tool-svg {
+  width: clamp(14px, 3.1cqw, 30px);
+  height: clamp(14px, 3.1cqw, 30px);
+}
+
+.floating-orca {
+  left: 8%;
+  top: 22%;
+  animation: floatDriftA 11.5s ease-in-out infinite;
+}
+
+.floating-obsidian {
+  left: 16.5%;
+  bottom: 20%;
+  animation: floatDriftB 13.8s ease-in-out infinite;
+}
+
+.floating-antigravity {
+  right: 16.5%;
+  top: 21%;
+  animation: floatDriftC 12.6s ease-in-out infinite;
+}
+
+.floating-pi {
+  right: 8%;
+  bottom: 22%;
+  animation: floatDriftD 10.4s ease-in-out infinite;
+}
+
+@keyframes floatDriftA {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(12px, 8px, 0); }
+}
+
+@keyframes floatDriftB {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(-11px, -9px, 0); }
+}
+
+@keyframes floatDriftC {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(-12px, 9px, 0); }
+}
+
+@keyframes floatDriftD {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(10px, -8px, 0); }
+}
+
+/* Three Clickable Accessible Desktop Icons (Field Notes, Curated Radar, Projects) */
+.monitor-desktop-icons {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(0.55rem, 2.8cqw, 2.1rem);
+  pointer-events: none;
+}
+
+.hero-monitor-screen.is-active .monitor-desktop-icons {
+  pointer-events: auto;
+}
+
+.monitor-desktop-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.48rem;
+  padding: 0.55rem 0.85rem;
+  border-radius: 3px;
+  border: 1px solid transparent;
+  color: var(--hero-ink);
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.16s ease, background-color 0.16s ease, border-color 0.16s ease;
+}
+
+.monitor-icon-frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(38px, 5.4cqw, 54px);
+  height: clamp(38px, 5.4cqw, 54px);
+  background: var(--hero-icon-bg);
+  border: 1px solid var(--hero-muted);
+  border-radius: 3px;
+  transition: border-color 0.16s ease, background-color 0.16s ease;
+}
+
+.desktop-glyph-svg {
+  width: 56%;
+  height: 56%;
+  color: currentColor;
+}
+
+.monitor-icon-label {
+  font-family: var(--font-mono);
+  font-size: clamp(11px, 1.3cqw, 12.5px);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  color: var(--hero-ink);
+  white-space: nowrap;
+}
+
+.monitor-desktop-icon:hover {
+  transform: translateY(-2px);
+  background: var(--hero-icon-hover-bg);
+  border-color: var(--hero-ink);
+}
+
+.monitor-desktop-icon:hover .monitor-icon-frame,
+.monitor-desktop-icon:focus-visible .monitor-icon-frame {
+  border-color: var(--hero-ink);
+  background: var(--hero-surface-2);
+}
+
+.monitor-desktop-icon:focus-visible {
+  outline: 2px solid var(--hero-ink);
+  outline-offset: 2px;
+  background: var(--hero-icon-hover-bg);
+}
+
+/* Compact Monitor Container Query for Narrow / Mobile Viewports */
+@container (max-height: 165px) {
+  .monitor-desktop-icons {
+    gap: 0.3rem;
+  }
+
+  .monitor-desktop-icon {
+    flex-direction: row;
+    gap: 0.25rem;
+    padding: 0.3rem 0.38rem;
+    min-height: 36px;
+    background: var(--hero-icon-bg);
+    border-color: var(--hero-muted);
+  }
+
+  .monitor-icon-frame {
+    width: 18px;
+    height: 18px;
+    border: none;
+    background: transparent;
+  }
+
+  .desktop-glyph-svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .monitor-icon-label {
+    font-size: 9.75px;
+  }
+
+  .floating-orca {
+    left: 2%;
+    top: 10%;
+  }
+
+  .floating-obsidian {
+    left: 2.5%;
+    bottom: 8%;
+  }
+
+  .floating-antigravity {
+    right: 2.5%;
+    top: 10%;
+  }
+
+  .floating-pi {
+    right: 2%;
+    bottom: 8%;
+  }
+}
+
+/* Subtle Studio Caption at Bottom of Act 2 */
+.hero-desk-caption {
+  position: absolute;
+  bottom: 1.35rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  opacity: 0;
+  pointer-events: none;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: var(--hero-muted);
+  background: var(--hero-plate-bg);
+  border: 1px solid var(--hero-surface-3);
+  border-radius: 2px;
+  padding: 0.3rem 0.75rem;
+  white-space: nowrap;
+  max-width: calc(100vw - 2rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Reduced Motion Overrides */
+@media (prefers-reduced-motion: reduce) {
+  .floating-tool {
+    animation: none !important;
+  }
+
+  .monitor-desktop-icon {
+    transition: none;
+  }
+}
+
+.hero-runway.is-reduced-motion .floating-tool {
+  animation: none !important;
+}
+
+/* Mobile Responsive Adjustments */
+@media (max-width: 640px) {
+  .hero-topbar-shell {
+    padding: 1rem 1rem 0.5rem;
+  }
+
+  .hero-editorial-overlay {
+    top: 3.65rem;
+    left: 1rem;
+    right: 1rem;
+    max-width: none;
+  }
+
+  .hero-editorial-card {
+    padding: 1rem 1.1rem 1.05rem;
+  }
+
+  .hero-editorial-card .hero-title {
+    font-size: clamp(1.75rem, 7.2vw, 2.2rem);
+    margin-bottom: 0.65rem;
+  }
+
+  .hero-editorial-card .hero-lead {
+    font-size: 14.5px;
+    margin-bottom: 0.85rem;
+  }
+
+  .hero-editorial-card .hero-nav {
+    font-size: 12.5px;
+    gap: 0.35rem 0.75rem;
+  }
+
+  .hero-desk-caption {
+    font-size: 10px;
+    bottom: 1rem;
+  }
+}

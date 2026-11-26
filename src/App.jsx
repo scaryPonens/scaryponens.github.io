@@ -1,6 +1,5 @@
 import { useEffect } from 'react'
-import Header from './components/Header'
-import Now from './components/Now'
+import Hero3D from './components/Hero3D'
 import Radar from './components/Radar'
 import BlogList from './components/BlogList'
 import Projects from './components/Projects'
@@ -19,10 +18,9 @@ function App() {
 
   return (
     <div className="app">
+      <Hero3D />
       <div className="content">
-        <Header />
         <main>
-          <Now />
           <Radar />
           <BlogList />
           <Projects />
