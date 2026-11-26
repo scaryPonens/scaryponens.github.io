@@ -94,6 +94,26 @@ function CuratedRadarIconSvg() {
   )
 }
 
+function ProjectsIconSvg() {
+  return (
+    <svg
+      viewBox="0 0 28 28"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className="desktop-glyph-svg"
+    >
+      <path d="M14 4.5 22.5 9.4v9.2L14 23.5 5.5 18.6V9.4Z" />
+      <path d="M5.5 9.4 14 14.3 22.5 9.4" />
+      <path d="M14 14.3v9.2" />
+      <path d="M9.8 6.95 18.2 11.8" strokeOpacity="0.65" />
+    </svg>
+  )
+}
+
 function Hero3D() {
   const runwayRef = useRef(null)
   const act1OverlayRef = useRef(null)
@@ -300,6 +320,14 @@ function Hero3D() {
                   <CuratedRadarIconSvg />
                   <span>Curated Radar</span>
                 </a>
+                <a
+                  href="#projects"
+                  className="hero-reduced-btn"
+                  onClick={handleSmoothSectionJump('projects')}
+                >
+                  <ProjectsIconSvg />
+                  <span>Projects</span>
+                </a>
               </div>
             )}
           </div>
@@ -334,7 +362,7 @@ function Hero3D() {
             </span>
           </div>
 
-          {/* Two clickable accessible desktop icons */}
+          {/* Three clickable accessible desktop icons */}
           <nav className="monitor-desktop-icons" aria-label="Monitor desktop shortcuts">
             <a
               href="#field-notes"
@@ -359,12 +387,24 @@ function Hero3D() {
               </span>
               <span className="monitor-icon-label">Curated Radar</span>
             </a>
+
+            <a
+              href="#projects"
+              className="monitor-desktop-icon"
+              tabIndex={isDeskActive ? 0 : -1}
+              onClick={handleSmoothSectionJump('projects')}
+            >
+              <span className="monitor-icon-frame">
+                <ProjectsIconSvg />
+              </span>
+              <span className="monitor-icon-label">Projects</span>
+            </a>
           </nav>
         </div>
 
         {/* Subtle monochrome studio caption in Act 2 */}
         <div ref={act2CaptionRef} className="hero-desk-caption" aria-hidden="true">
-          <span>49″ Ultrawide Bench · Select an index or scroll for 01 / NOW ↓</span>
+          <span>Select an index or scroll ↓</span>
         </div>
       </div>
     </section>

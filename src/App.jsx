@@ -1,6 +1,5 @@
 import { useEffect } from 'react'
 import Hero3D from './components/Hero3D'
-import Now from './components/Now'
 import Radar from './components/Radar'
 import BlogList from './components/BlogList'
 import Projects from './components/Projects'
@@ -22,7 +21,6 @@ function App() {
       <Hero3D />
       <div className="content">
         <main>
-          <Now />
           <Radar />
           <BlogList />
           <Projects />

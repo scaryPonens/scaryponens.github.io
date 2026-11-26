@@ -320,71 +320,217 @@ export function buildDeskScene(materials) {
     pushSeg(screenArcVerts, sTop.x, sTop.y, sTop.z, sBot.x, sBot.y, sBot.z)
   }
 
-  // 4. 75% Mechanical Keyboard Silhouette + Instanced Keycaps + Coiled Cable
-  const kbX = -0.22
-  const kbZ = 0.78
-  const kbTilt = 0.075
-  addStaticBox(materials.massHigh, kbX, 0.048, kbZ, 1.38, 0.068, 0.48, kbTilt, 0, 0, 'ink')
-  // Recessed keywell plate
-  addStaticBox(materials.massDeep, kbX, 0.078, kbZ, 1.29, 0.02, 0.4, kbTilt, 0, 0, 'muted')
+  // 4. ZSA Voyager Split Ergonomic Keyboard (2 ultra-thin halves, 6x4 columnar stagger + 2-key thumb clusters = 52 keys)
+  const createVoyagerHalfPlate = (mirrorX) => {
+    // CW outline in (x, z) for left half; mirrored & reversed for right half so normals stay outward
+    const baseOutline = [
+      [-0.258, -0.146],
+      [-0.082, -0.172],
+      [0.041, -0.204],
+      [0.165, -0.184],
+      [0.254, -0.164],
+      [0.254, 0.118],
+      [0.348, 0.204],
+      [0.312, 0.304],
+      [0.156, 0.268],
+      [0.122, 0.178],
+      [-0.082, 0.178],
+      [-0.258, 0.194],
+    ]
+    const poly = mirrorX
+      ? baseOutline.map(([x, z]) => [-x, z]).reverse()
+      : baseOutline
 
-  // Instanced keycaps (5 sculpted rows)
-  const keyMatrices = []
-  const keyRows = 5
-  const keyCols = 14
-  const kbQuat = new Quaternion().setFromEuler(new Euler(kbTilt, 0, 0))
-  for (let r = 0; r < keyRows; r++) {
-    const localZ = -0.155 + r * 0.078
-    if (r === 4) {
-      // Bottom row with spacebar & modifiers
-      const bottomLayout = [
-        [-0.56, 0.095],
-        [-0.45, 0.095],
-        [-0.34, 0.095],
-        [-0.02, 0.48], // spacebar
-        [0.3, 0.095],
-        [0.41, 0.095],
-        [0.52, 0.08],
-        [0.6, 0.08],
-      ]
-      for (const [kx, kw] of bottomLayout) {
-        tmpPos.set(kx, 0.046, localZ).applyQuaternion(kbQuat)
-        tmpPos.x += kbX
-        tmpPos.y += 0.05
-        tmpPos.z += kbZ
-        tmpScale.set(kw, 0.032, 0.062)
-        keyMatrices.push(new Matrix4().compose(tmpPos, kbQuat, tmpScale))
+    const idx = poly.map((_, i) => i)
+    const tris = []
+    const cross2 = (a, b, c) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])
+    const inTri2 = (p, a, b, c) =>
+      cross2(a, b, p) >= 0 && cross2(b, c, p) >= 0 && cross2(c, a, p) >= 0
+    let guard = 0
+    while (idx.length > 3 && guard++ < 200) {
+      for (let i = 0; i < idx.length; i++) {
+        const i0 = idx[(i - 1 + idx.length) % idx.length]
+        const i1 = idx[i]
+        const i2 = idx[(i + 1) % idx.length]
+        const a = poly[i0]
+        const b = poly[i1]
+        const c = poly[i2]
+        if (cross2(a, b, c) <= 1e-7) continue
+        let ear = true
+        for (let j = 0; j < idx.length; j++) {
+          const ij = idx[j]
+          if (ij === i0 || ij === i1 || ij === i2) continue
+          if (inTri2(poly[ij], a, b, c)) {
+            ear = false
+            break
+          }
+        }
+        if (ear) {
+          tris.push([i0, i1, i2])
+          idx.splice(i, 1)
+          break
+        }
       }
-    } else {
-      for (let c = 0; c < keyCols; c++) {
-        const isWideLeft = c === 0 && r > 0
-        const isWideRight = c === keyCols - 1 && (r === 1 || r === 2 || r === 3)
-        const kw = isWideLeft || isWideRight ? 0.1 : 0.074
-        const kx = -0.575 + c * 0.0885
-        tmpPos.set(kx, 0.046, localZ).applyQuaternion(kbQuat)
-        tmpPos.x += kbX
-        tmpPos.y += 0.05
-        tmpPos.z += kbZ
-        tmpScale.set(kw, 0.032, 0.062)
-        keyMatrices.push(new Matrix4().compose(tmpPos, kbQuat, tmpScale))
+    }
+    tris.push([idx[0], idx[1], idx[2]])
+
+    const hy = 0.0125 // ultra-thin 0.025 total plate thickness
+    const pos = []
+    const addTri = (ax, ay, az, bx, by, bz, cx, cy, cz) => {
+      pos.push(ax, ay, az, bx, by, bz, cx, cy, cz)
+    }
+    for (const [i0, i1, i2] of tris) {
+      const [x0, z0] = poly[i0]
+      const [x1, z1] = poly[i1]
+      const [x2, z2] = poly[i2]
+      // Top cap (+Y normal)
+      addTri(x0, hy, z0, x2, hy, z2, x1, hy, z1)
+      // Bottom cap (-Y normal)
+      addTri(x0, -hy, z0, x1, -hy, z1, x2, -hy, z2)
+    }
+    for (let i = 0; i < poly.length; i++) {
+      const [x0, z0] = poly[i]
+      const [x1, z1] = poly[(i + 1) % poly.length]
+      addTri(x0, -hy, z0, x0, hy, z0, x1, hy, z1)
+      addTri(x0, -hy, z0, x1, hy, z1, x1, -hy, z1)
+    }
+    const g = trackGeo(new BufferGeometry())
+    g.setAttribute('position', new Float32BufferAttribute(pos, 3))
+    g.computeVertexNormals()
+    return g
+  }
+
+  const pushCubicCurve = (arr, p0, p1, p2, p3, segs = 20) => {
+    let prevX = p0.x
+    let prevY = p0.y
+    let prevZ = p0.z
+    for (let i = 1; i <= segs; i++) {
+      const t = i / segs
+      const u = 1 - t
+      const b0 = u * u * u
+      const b1 = 3 * u * u * t
+      const b2 = 3 * u * t * t
+      const b3 = t * t * t
+      const nx = b0 * p0.x + b1 * p1.x + b2 * p2.x + b3 * p3.x
+      const ny = b0 * p0.y + b1 * p1.y + b2 * p2.y + b3 * p3.y
+      const nz = b0 * p0.z + b1 * p1.z + b2 * p2.z + b3 * p3.z
+      pushSeg(arr, prevX, prevY, prevZ, nx, ny, nz)
+      prevX = nx
+      prevY = ny
+      prevZ = nz
+    }
+  }
+
+  const voyagerHalves = [
+    { mirrorX: false, cx: -0.6, cz: 0.78, rotY: -0.17, tentZ: 0.035 }, // Left half angled slightly inward
+    { mirrorX: true, cx: 0.28, cz: 0.78, rotY: 0.17, tentZ: -0.035 },  // Right half angled slightly inward
+  ]
+  const colStaggerZ = [0.026, 0.022, -0.014, -0.032, -0.012, 0.006]
+  const keyPitch = 0.082
+  const keyMatrices = []
+  const trrsPorts = []
+  let leftUsbPort = null
+
+  for (const half of voyagerHalves) {
+    const sign = half.mirrorX ? -1 : 1
+    const plateGeo = createVoyagerHalfPlate(half.mirrorX)
+    const plateEdges = trackGeo(new EdgesGeometry(plateGeo, 15))
+    const halfQuat = new Quaternion().setFromEuler(new Euler(0.035, half.rotY, half.tentZ))
+
+    const plateMesh = new Mesh(plateGeo, materials.massHigh)
+    plateMesh.position.set(half.cx, 0.032, half.cz)
+    plateMesh.quaternion.copy(halfQuat)
+    plateMesh.updateMatrix()
+    deskGroup.add(plateMesh)
+    pushTransformedEdges(plateEdges.attributes.position, inkVerts, plateMesh.matrix)
+
+    const toWorld = (lx, ly, lz) =>
+      new Vector3(lx, ly, lz).applyQuaternion(halfQuat).add(plateMesh.position)
+
+    // 6-column x 4-row columnar-staggered low-profile square Choc keycaps (24 keys per half)
+    for (let c = 0; c < 6; c++) {
+      const lx = sign * (-2.5 * keyPitch + c * keyPitch)
+      const stag = colStaggerZ[c]
+      for (let r = 0; r < 4; r++) {
+        const lz = (-1.5 + r) * keyPitch + stag
+        const wPos = toWorld(lx, 0.021, lz)
+        tmpScale.set(0.067, 0.017, 0.067)
+        keyMatrices.push(new Matrix4().compose(wPos, halfQuat, tmpScale))
+      }
+    }
+
+    // Signature 2-key angled thumb cluster tucked at inner-bottom edge (2 keys per half)
+    const thumbSpecs = [
+      { lx: 0.204, lz: 0.206, localRy: -0.26, sz: 0.09 },
+      { lx: 0.282, lz: 0.238, localRy: -0.44, sz: 0.096 },
+    ]
+    for (const tk of thumbSpecs) {
+      const wPos = toWorld(sign * tk.lx, 0.021, tk.lz)
+      const thumbQuat = halfQuat
+        .clone()
+        .multiply(new Quaternion().setFromEuler(new Euler(0, sign * tk.localRy, 0)))
+      tmpScale.set(0.068, 0.017, tk.sz)
+      keyMatrices.push(new Matrix4().compose(wPos, thumbQuat, tmpScale))
+    }
+
+    // Subtle status LED indicator ticks along inner column header
+    const ledA = toWorld(sign * 0.235, 0.014, -0.12)
+    const ledB = toWorld(sign * 0.235, 0.014, -0.06)
+    pushSeg(inkVerts, ledA.x, ledA.y, ledA.z, ledB.x, ledB.y, ledB.z)
+
+    // TRRS barrel jack housing on inner top edge of each half
+    const trrsWorld = toWorld(sign * 0.215, 0.004, -0.178)
+    addStaticBox(materials.massMid, trrsWorld.x, trrsWorld.y, trrsWorld.z, 0.032, 0.022, 0.048, 0, half.rotY, 0, 'ink')
+    trrsPorts.push({
+      tip: toWorld(sign * 0.215, 0.004, -0.204),
+      tangent: toWorld(sign * 0.25, 0.002, -0.34),
+    })
+
+    if (!half.mirrorX) {
+      // USB-C port plug on top outer-mid edge of left half
+      const usbHousing = toWorld(-0.145, 0.004, -0.184)
+      addStaticBox(materials.massMid, usbHousing.x, usbHousing.y, usbHousing.z, 0.038, 0.02, 0.046, 0, half.rotY, 0, 'ink')
+      leftUsbPort = {
+        tip: toWorld(-0.145, 0.004, -0.208),
+        ctrl: toWorld(-0.16, 0.002, -0.44),
       }
     }
   }
+
   const keycapMesh = new InstancedMesh(boxGeo, materials.massMid, keyMatrices.length)
   for (let i = 0; i < keyMatrices.length; i++) {
     keycapMesh.setMatrixAt(i, keyMatrices[i])
-    pushTransformedEdges(boxEdges.attributes.position, mutedVerts, keyMatrices[i])
+    pushTransformedEdges(boxEdges.attributes.position, inkVerts, keyMatrices[i])
   }
   keycapMesh.instanceMatrix.needsUpdate = true
   deskGroup.add(keycapMesh)
 
-  // Clean USB-C cable from keyboard rear to stand riser
-  pushSeg(inkVerts, kbX, 0.045, kbZ - 0.24, kbX, 0.024, 0.18)
-  pushSeg(inkVerts, kbX, 0.024, 0.18, 0, 0.024, -0.04)
-  pushSeg(inkVerts, 0, 0.024, -0.04, 0, 0.22, -0.31)
+  // Thin curved TRRS interconnect cable looping cleanly between inner top edges of the two Voyager halves
+  pushCubicCurve(
+    inkVerts,
+    trrsPorts[0].tip,
+    new Vector3(trrsPorts[0].tangent.x, 0.022, trrsPorts[0].tangent.z),
+    new Vector3(trrsPorts[1].tangent.x, 0.022, trrsPorts[1].tangent.z),
+    trrsPorts[1].tip,
+    22
+  )
+
+  // Subtle curved USB-C cord from left Voyager half up toward the monitor stand cable pass-through
+  if (leftUsbPort) {
+    const deskEntry = new Vector3(0, 0.024, -0.05)
+    pushCubicCurve(
+      inkVerts,
+      leftUsbPort.tip,
+      new Vector3(leftUsbPort.ctrl.x, 0.022, leftUsbPort.ctrl.z),
+      new Vector3(-0.18, 0.022, 0.14),
+      deskEntry,
+      18
+    )
+    pushSeg(inkVerts, deskEntry.x, deskEntry.y, deskEntry.z, 0, 0.22, -0.31)
+  }
 
   // 5. Ergonomic Wireless Mouse Silhouette on right side of desk mat
-  const msX = 0.88
+  const msX = 1.06
   const msZ = 0.8
   addStaticBox(materials.massHigh, msX, 0.046, msZ, 0.23, 0.064, 0.37, 0.04, -0.05, 0, 'ink')
   addStaticBox(materials.massMid, msX, 0.082, msZ - 0.01, 0.19, 0.024, 0.26, 0.06, -0.05, 0, 'ink')

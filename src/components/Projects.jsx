@@ -25,7 +25,7 @@ function Projects() {
     <>
       <hr className="section-rule" />
       <section className="editorial-section" id="projects" aria-labelledby="projects-heading">
-        <p className="section-kicker">04 / PROJECTS</p>
+        <p className="section-kicker">03 / PROJECTS</p>
         <h2 id="projects-heading" className="section-heading">Built things &amp; experiments.</h2>
         <div className="projects-list">
           {projects.map((project, index) => {

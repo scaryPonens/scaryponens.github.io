@@ -276,25 +276,25 @@
 }
 
 .floating-orca {
-  left: 10%;
+  left: 8%;
   top: 22%;
   animation: floatDriftA 11.5s ease-in-out infinite;
 }
 
 .floating-obsidian {
-  left: 22%;
+  left: 16.5%;
   bottom: 20%;
   animation: floatDriftB 13.8s ease-in-out infinite;
 }
 
 .floating-antigravity {
-  right: 21%;
+  right: 16.5%;
   top: 21%;
   animation: floatDriftC 12.6s ease-in-out infinite;
 }
 
 .floating-pi {
-  right: 10%;
+  right: 8%;
   bottom: 22%;
   animation: floatDriftD 10.4s ease-in-out infinite;
 }
@@ -319,14 +319,14 @@
   50% { transform: translate3d(10px, -8px, 0); }
 }
 
-/* Two Clickable Accessible Desktop Icons (Field Notes & Curated Radar) */
+/* Three Clickable Accessible Desktop Icons (Field Notes, Curated Radar, Projects) */
 .monitor-desktop-icons {
   position: relative;
   z-index: 2;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: clamp(0.65rem, 3.8cqw, 2.6rem);
+  gap: clamp(0.55rem, 2.8cqw, 2.1rem);
   pointer-events: none;
 }
 
@@ -397,52 +397,52 @@
 /* Compact Monitor Container Query for Narrow / Mobile Viewports */
 @container (max-height: 165px) {
   .monitor-desktop-icons {
-    gap: 0.4rem;
+    gap: 0.3rem;
   }
 
   .monitor-desktop-icon {
     flex-direction: row;
-    gap: 0.32rem;
-    padding: 0.34rem 0.48rem;
-    min-height: 38px;
+    gap: 0.25rem;
+    padding: 0.3rem 0.38rem;
+    min-height: 36px;
     background: var(--hero-icon-bg);
     border-color: var(--hero-muted);
   }
 
   .monitor-icon-frame {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     border: none;
     background: transparent;
   }
 
   .desktop-glyph-svg {
-    width: 15px;
-    height: 15px;
+    width: 14px;
+    height: 14px;
   }
 
   .monitor-icon-label {
-    font-size: 10.5px;
+    font-size: 9.75px;
   }
 
   .floating-orca {
-    left: 2.5%;
-    top: 12%;
+    left: 2%;
+    top: 10%;
   }
 
   .floating-obsidian {
-    left: 3.5%;
-    bottom: 10%;
+    left: 2.5%;
+    bottom: 8%;
   }
 
   .floating-antigravity {
-    right: 3.5%;
-    top: 12%;
+    right: 2.5%;
+    top: 10%;
   }
 
   .floating-pi {
-    right: 2.5%;
-    bottom: 10%;
+    right: 2%;
+    bottom: 8%;
   }
 }
 

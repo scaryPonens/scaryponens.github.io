@@ -24,7 +24,7 @@ function BlogList() {
     <>
       <hr className="section-rule" />
       <section className="editorial-section" id="field-notes" aria-labelledby="field-notes-heading">
-        <p className="section-kicker">03 / FIELD NOTES</p>
+        <p className="section-kicker">02 / FIELD NOTES</p>
         <h2 id="field-notes-heading" className="section-heading">Longer arguments &amp; lessons.</h2>
         {!loading && blogs.length === 0 ? (
           <p className="empty-state">wow, such empty.</p>
