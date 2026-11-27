@@ -202,6 +202,30 @@ export function discoverSlots(rawHtml) {
     slots.push(makeInlineElementSlot($, rawHtml, 'hero.companion', heroCompanion[0]))
   }
 
+  const preambleEl = $('.preamble').not('section .preamble').first()
+  if (preambleEl.length) {
+    const labelEl = preambleEl.find('.preamble-label').first()
+    if (labelEl.length) {
+      slots.push(makeInlineElementSlot($, rawHtml, 'preamble.label', labelEl[0], { section: 'Preamble' }))
+    }
+    const bodyContainer = preambleEl.find('.preamble-body').first()
+    const container = bodyContainer.length ? bodyContainer : preambleEl
+    const bodyParas = container.children('p').toArray()
+    if (bodyParas.length > 0) {
+      slots.push(
+        makeParagraphGroupSlot($, rawHtml, 'preamble.body', container[0], bodyParas, {
+          section: labelEl.length ? null : 'Preamble'
+        })
+      )
+    } else if (bodyContainer.length) {
+      slots.push(
+        makeInlineElementSlot($, rawHtml, 'preamble.body', bodyContainer[0], {
+          section: labelEl.length ? null : 'Preamble'
+        })
+      )
+    }
+  }
+
   $('section').each((secIdx, secEl) => {
     const secNum = secIdx + 1
     const secPrefix = `sec${secNum}`

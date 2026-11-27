@@ -224,6 +224,144 @@
       color: var(--ex-text);
     }
 
+    /* Editorial Preamble (Note Up Front) */
+    .preamble {
+      margin: 28px 0 0;
+      padding: 14px 18px;
+      background: var(--ex-surface);
+      border: 1px solid var(--ex-border);
+      border-left: 3px solid var(--ex-rule);
+      border-radius: 4px;
+      max-width: 65ch;
+    }
+    .preamble + .rule {
+      margin-top: 36px;
+    }
+
+    /* Editorial Hero Illustration: B-Team Bots around the Watercooler */
+    .bots-cooler-figure {
+      margin: 28px 0 0;
+    }
+    .bots-cooler-figure + .rule {
+      margin-top: 38px;
+    }
+    .bots-cooler-frame {
+      border: 1px solid var(--ex-border);
+      border-radius: 6px;
+      overflow: hidden;
+      background: var(--ex-surface);
+    }
+    .bots-cooler-stage {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      background: #24201c;
+      border-bottom: 1px solid var(--ex-border);
+    }
+    .bots-cooler-img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+    .bots-cooler-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.28s ease;
+    }
+    .bots-cooler-canvas.is-ready {
+      opacity: 1;
+    }
+    .bots-role-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      background: var(--ex-surface);
+    }
+    .bots-role-item {
+      padding: 10px 13px 11px;
+      border-right: 1px solid var(--ex-border);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+    .bots-role-item:last-child {
+      border-right: 0;
+    }
+    .bots-role-name {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.25;
+      letter-spacing: -0.008em;
+      color: var(--ex-text);
+    }
+    .bots-role-desc {
+      font-family: 'IBM Plex Mono', ui-monospace, monospace;
+      font-size: 11px;
+      line-height: 1.35;
+      letter-spacing: 0.01em;
+      color: var(--ex-faint);
+    }
+    .bots-cooler-caption {
+      margin-top: 9px;
+      font-family: 'IBM Plex Mono', ui-monospace, monospace;
+      font-size: 11.5px;
+      line-height: 1.5;
+      color: var(--ex-faint);
+    }
+    .bots-cooler-caption .bots-cooler-quote {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-style: italic;
+      font-size: 12.5px;
+      color: var(--ex-muted);
+    }
+    .preamble-label {
+      font-family: 'IBM Plex Mono', ui-monospace, monospace;
+      font-size: 10.5px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--ex-faint);
+      margin-bottom: 6px;
+    }
+    .preamble p {
+      font-size: 14.25px;
+      line-height: 1.58;
+      color: var(--ex-muted);
+      margin: 0;
+    }
+    .preamble p + p {
+      margin-top: 10px;
+    }
+    .preamble strong {
+      color: var(--ex-text);
+      font-weight: 600;
+    }
+    .preamble a {
+      color: var(--ex-text);
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3.5px;
+    }
+    .preamble code {
+      font-family: 'IBM Plex Mono', ui-monospace, monospace;
+      font-size: 0.88em;
+      background: var(--ex-bg);
+      padding: 1px 5px;
+      border-radius: 3px;
+      color: var(--ex-text);
+    }
+
     /* Editorial Side Note */
     .side-note {
       margin: 20px 0 22px;
@@ -602,6 +740,10 @@
 
     @media (max-width: 640px) {
       .page { padding: 28px 18px 56px; }
+      .bots-role-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .bots-role-item:nth-child(2) { border-right: 0; }
+      .bots-role-item:nth-child(1),
+      .bots-role-item:nth-child(2) { border-bottom: 1px solid var(--ex-border); }
       .custody-grid { grid-template-columns: 1fr; }
       .id-grid { grid-template-columns: 1fr; }
       .step-strip { grid-template-columns: repeat(2, 1fr); }
@@ -624,7 +766,7 @@
     </h1>
 
     <p class="lead">
-      Inside a session harness like <code>Claude Code</code>, your live attention does two jobs at once: holding context across turns and gating whatever CLIs your shell is signed into. Moving work to a persistent Orca bot removes you from that loop—forcing state out of chat scrollback and turning ambient machine logins into an explicit blast radius.
+      With <code>Pi</code> or <code>Claude Code</code>, sitting at the keyboard does two jobs without you thinking about it: keeping the thread alive, and watching over every logged-in tool in your shell. Move that work to a persistent bot (<code>Orca</code>, <code>Hermes</code>, <code>Grok Bot</code>), and both become explicit: state moves out of chat, and you have to know what credentials the bot can actually reach.
     </p>
 
     <p class="companion-note">
@@ -637,24 +779,69 @@
       <a href="#audit">Auditing the surface</a>
       <a href="#bites">Where it still bites</a>
       <a href="#check">Check yourself</a>
+      <a href="#looking-ahead">Looking ahead</a>
     </nav>
+
+    <aside class="preamble" aria-label="Note up front">
+      <div class="preamble-label">Note up front</div>
+      <div class="preamble-body">
+        <p>
+          <code>credential-audit</code> is far from complete, and this piece only scratches the surface. It’s meant as an example of how we can self-serve visibility into our own setups—not a finished security model. I don’t want to get seduced by whatever tool is getting hyped on social media, but in a fast-paced environment we don’t have time to wait either. Staying current and intentional about shifting paradigms is how I improve my own craft—and stay ready to lead and accelerate adoption when I bring a new workflow to my team.
+        </p>
+      </div>
+    </aside>
+
+    <figure class="bots-cooler-figure">
+      <div class="bots-cooler-frame">
+        <div class="bots-cooler-stage">
+          <img
+            class="bots-cooler-img"
+            src="/assets/bots/b-team-cooler.jpg"
+            width="1376"
+            height="768"
+            alt="Warm Gruvbox retro-office illustration of Reuben's four Voltus B-Team bots gathered around a glass office water cooler at dusk: Pam holding a steaming terracotta coffee mug, Jim leaning an elbow on the cooler with a laptop tucked under his arm, Michael gesturing in a suit with a PITCH badge, and Dwight standing with arms crossed."
+            decoding="async"
+          />
+          <canvas class="bots-cooler-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="bots-role-strip" role="list" aria-label="B-Team bot roles">
+          <div class="bots-role-item" role="listitem">
+            <span class="bots-role-name">Pam</span>
+            <span class="bots-role-desc">HR &amp; rep</span>
+          </div>
+          <div class="bots-role-item" role="listitem">
+            <span class="bots-role-name">Jim</span>
+            <span class="bots-role-desc">builds it</span>
+          </div>
+          <div class="bots-role-item" role="listitem">
+            <span class="bots-role-name">Michael</span>
+            <span class="bots-role-desc">shapes &amp; pitches</span>
+          </div>
+          <div class="bots-role-item" role="listitem">
+            <span class="bots-role-name">Dwight</span>
+            <span class="bots-role-desc">reviews it</span>
+          </div>
+        </div>
+      </div>
+      <figcaption class="bots-cooler-caption">Reuben's bots · Voltus · November 2026 — <span class="bots-cooler-quote">"We don't drink water. We just like the cooler."</span></figcaption>
+    </figure>
 
     <hr class="rule" id="tmux" />
 
     <!-- SECTION 01 -->
     <section>
-      <div class="kicker">01 / Not Claude Code in tmux</div>
+      <div class="kicker">01 / Not Claude Code in Herdr</div>
       <h2 class="sec-title">Leaving the terminal loop splits state and authority apart.</h2>
 
       <div class="prose">
         <p>
-          People hear “Orca bot” and picture <code>Claude Code</code> left open in a <code>tmux</code> pane. They both run an LLM with shell and file tools on your machine, so from ten feet away they look interchangeable.
+          People may hear “bot” and picture <code>Claude Code</code> left open in a <code>Herdr</code> workspace (or a <code>tmux</code> tab). They both run an LLM with shell and file tools on your machine, so from ten feet away they look interchangeable.
         </p>
         <p>
-          In practice, a session harness leans on you sitting at the keyboard. First, <strong>its state lives in the chat transcript</strong>: when the context window fills, it auto-compacts older turns into a lossy summary, and when the session closes, the thread is over. Second, <strong>its authority is implicit</strong>: it runs inside your interactive shell with every token, SSH key, and signed-in CLI you have, which feels natural because your eyes are watching the prompt.
+          In practice, a session harness leans on you sitting at the keyboard. First, <strong>its state lives in the chat transcript</strong>: when the context window fills, it auto-compacts older turns into a lossy summary, and when the session closes, the thread is over (I rarely resume sessions after a task is done). Second, <strong>its authority is implicit</strong>: it runs inside your interactive shell with every token, SSH key, and signed-in CLI you have, which feels natural because your eyes are watching <code>Claude Code</code> “shenanigan” or “discombobulate”.
         </p>
         <p>
-          An Orca bot is built to outlive a session and wake asynchronously—on a pull-request check, a review comment, or a teammate’s message—when you are nowhere near the terminal. That single shift forces two things out into the open: <strong>durable state moves outside the chat</strong> (into explicit Items, <code>MEMORY.md</code>, and GitHub), and <strong>who acts as whom</strong> has to be defined per surface.
+          A bot is built to outlive a session and wake asynchronously—on a pull-request check, a review comment, or a teammate’s message—when you are nowhere near the terminal. That single shift forces two things out into the open: <strong>durable state moves outside the chat</strong> (into explicit work items, <code>MEMORY.md</code>, and GitHub), and <strong>who the bot acts as</strong> has to be separated between talking to people and touching your tools.
         </p>
       </div>
 
@@ -696,20 +883,23 @@
     <!-- SECTION 02 -->
     <section>
       <div class="kicker">02 / Acting on Your Behalf</div>
-      <h2 class="sec-title">Speaks as the bot. Executes as you.</h2>
+      <h2 class="sec-title">Sounds like a bot. Executes as you.</h2>
 
       <div class="prose">
         <p>
-          “Acting on your behalf” does not mean a bot pretends to be you in conversation. Impersonating a teammate in Slack or double-posting on a pull request under two different names erodes trust immediately.
+          “Acting on your behalf” does not mean letting a bot impersonate you in chat. Teammates should never have to guess whether they’re reading a message from you or from your bot.
         </p>
         <p>
-          Instead, Orca splits <strong>voice</strong> from <strong>work</strong>. Where people read messages—Slack channels, DMs, or the thread that woke the bot—the bot speaks strictly under its own name and avatar. Where engineering state changes—opening pull requests, updating issue labels, pushing branches, or querying cloud state—it uses the host’s tools (<code>gh</code>, <code>orca linear</code>, <code>gt</code>) authenticated as its owner, adding explicit attribution (<em>“asked by &lt;name&gt; via &lt;Bot&gt;”</em>) whenever someone else triggered the write.
+          Instead, split <strong>voice</strong> from <strong>work</strong>. In Orca, the bot talks under its own name and avatar—in Slack, DMs, or the thread that woke it. When it pushes branches, opens pull requests, updates issues, or checks cloud state, it runs your machine’s signed-in CLIs (<code>gh</code>, <code>orca linear</code>, <code>gt</code>) as you.
+        </p>
+        <p>
+          Because the bot lives in shared channels, teammates can also <code>@mention</code> it directly—asking it to answer a question in Slack, check a PR, or update an issue. Any change it makes still executes through your local logins, so it stamps those writes with <em>“asked by &lt;name&gt; via &lt;Bot&gt;”</em> to keep the trail clear.
         </p>
 
         <aside class="side-note" aria-label="Side note on policy vs sandbox">
-          <div class="side-note-label">Side note · Policy gate, not an OS container</div>
+          <div class="side-note-label">Side note · Instructions, not a sandbox</div>
           <p>
-            An Orca bot’s home folder holds <code>SOUL.md</code>—where you set rules like <em>“read and report first; change nothing externally until I say so.”</em> That rule is a behavioral contract enforced in the prompt and item workflow (<code>Needs you</code>), <strong>not</strong> a kernel sandbox. Any CLI signed in on the machine remains reachable if a command invokes it.
+            Files like <code>SOUL.md</code> let you set rules such as <em>“read and report first; change nothing externally until I say so.”</em> Those are prompt rules backed by an approval step, <strong>not</strong> a sandbox. Every CLI signed in on your machine is still reachable from the shell.
           </p>
         </aside>
       </div>
@@ -755,10 +945,10 @@
 
       <div class="prose">
         <p>
-          After watching a bot coordinate review fixes across a stack of pull requests and prepare a deployment handoff, a practical question hit me: <strong>what accounts, services, and credentials can this bot actually reach on this machine right now—and how do we know which ones are live?</strong>
+          Watching a bot coordinate review fixes across a stack of pull requests and prep a deploy handoff raised a blunt question: <strong>what accounts, services, and credentials can this bot actually reach on my machine right now—and which ones are live?</strong>
         </p>
         <p>
-          Both <code>Claude Code</code> and an Orca bot inherit the same workstation environment, but you rarely audit your own shell while typing in it. Asking the bot to inventory its own reach—strictly read-only, without printing secret values or calling APIs with raw environment tokens—turned into <a href="https://github.com/scaryPonens/agent-skills/tree/main/skills/credential-audit" target="_blank" rel="noopener noreferrer"><code>credential-audit</code></a>, published in <a href="https://github.com/scaryPonens/agent-skills" target="_blank" rel="noopener noreferrer"><code>scaryPonens/agent-skills</code></a>.
+          Session harnesses and persistent bots inherit the exact same shell, yet you rarely audit your own environment while typing in it. I asked the bot to inventory its own reach—read-only, no secret values printed, no remote API calls with raw env tokens—and packaged the result as <a href="https://github.com/scaryPonens/agent-skills/tree/main/skills/credential-audit" target="_blank" rel="noopener noreferrer"><code>credential-audit</code></a> in <a href="https://github.com/scaryPonens/agent-skills" target="_blank" rel="noopener noreferrer"><code>scaryPonens/agent-skills</code></a>.
         </p>
       </div>
 
@@ -820,20 +1010,20 @@
     <!-- SECTION 04 -->
     <section>
       <div class="kicker">04 / Where It Still Bites</div>
-      <h2 class="sec-title">Three receipts from building and running the audit.</h2>
+      <h2 class="sec-title">Three catches from building and running the audit.</h2>
 
       <div class="prose">
         <p>
-          Running that first audit—and having the bot package the result into a public repository—surfaced three sharp edges you only notice in real use:
+          Running that first audit—and having the bot publish the result—turned up three surprises you only hit in real use:
         </p>
         <p>
-          <strong>1. Even <code>--help</code> is not guaranteed read-only.</strong> During the initial pass, probing an internal deploy CLI with <code>--help</code> caused the binary to silently self-update on disk. Arbitrary CLIs on <code>PATH</code> cannot be treated as side-effect-free; <code>audit.sh</code> only runs a fixed whitelist of known identity subcommands (<code>gh auth status</code>, <code>aws sts get-caller-identity</code>, <code>gcloud auth list</code>) and skips everything else.
+          <strong>1. Even <code>--help</code> can have side effects.</strong> On the first run, calling <code>--help</code> on an internal deploy CLI caused it to silently self-update on disk. You can’t probe arbitrary binaries on <code>PATH</code>, so its <code>audit.sh</code> script sticks to a fixed whitelist of read-only identity checks (<code>gh auth status</code>, <code>aws sts get-caller-identity</code>, <code>gcloud auth list</code>) and skips the rest.
         </p>
         <p>
-          <strong>2. Delegated <code>gh</code> means delegated defaults.</strong> When I chose to publish <code>credential-audit</code> to a public repository rather than an internal skills branch, the bot created <a href="https://github.com/scaryPonens/agent-skills" target="_blank" rel="noopener noreferrer"><code>scaryPonens/agent-skills</code></a> through my signed-in <code>gh</code> CLI—and picked an <code>MIT</code> license on its own without asking first, noting afterward that I could change it. Harmless on a small shell skill; a crisp illustration of what “acting on your behalf” grants whenever a parameter goes unspecified.
+          <strong>2. Delegated <code>gh</code> means delegated defaults.</strong> When I asked the bot to publish <code>credential-audit</code> publicly, it created <a href="https://github.com/scaryPonens/agent-skills" target="_blank" rel="noopener noreferrer"><code>scaryPonens/agent-skills</code></a> with my <code>gh</code> login—and picked an <code>MIT</code> license on its own, telling me afterward I could change it. Harmless here, but anything you don’t specify gets decided under your name.
         </p>
         <p>
-          <strong>3. Presence is not permission, and shell audits have a floor.</strong> Seeing <code>GITHUB_TOKEN</code> in <code>env</code> or a server in <code>.mcp.json</code> proves only <em>potential</em> access—an expired token looks identical when you refuse to call the API. Meanwhile, OS Keychain items, saved browser cookies, <code>.env</code> files, and raw credential files (<code>~/.aws/credentials</code>, <code>~/.kube/config</code>, <code>~/.netrc</code>) remain deliberate blind spots that the report names explicitly rather than scraping.
+          <strong>3. Presence isn’t proof, and some stores stay off-limits.</strong> Finding <code>GITHUB_TOKEN</code> in <code>env</code> or a server in <code>.mcp.json</code> only proves <em>possible</em> access—an expired token looks identical when you won’t hit the API. OS Keychain, browser cookies, <code>.env</code> files, and raw credential files (<code>~/.aws/credentials</code>, <code>~/.kube/config</code>, <code>~/.netrc</code>) remain deliberate blind spots that the report flags as unchecked instead of reading.
         </p>
       </div>
     </section>
@@ -847,7 +1037,7 @@
 
       <div class="prose">
         <p>
-          Test the boundary across identity modes and audit evidence on each case below.
+          Pick who’s acting—or what’s actually verified—in each case below.
         </p>
       </div>
 
@@ -860,7 +1050,7 @@
             <button class="quiz-opt" data-choice="unverified" onclick="pickQuiz(this, 'unverified')">Unverified env token</button>
             <button class="quiz-opt" data-choice="blind" onclick="pickQuiz(this, 'blind')">Outside bot reach</button>
           </div>
-          <div class="quiz-explain" data-right="<strong>Speaks as the bot itself.</strong> Conversational replies where woken (<code>orca bot reply</code>) and Slack posts (<code>orca slack</code>) use the bot’s own identity so teammates never mistake bot output for you—and never get duplicate replies under two names."></div>
+          <div class="quiz-explain" data-right="<strong>Speaks as the bot itself.</strong> Replies in the thread that woke it and posts in Slack use the bot’s own name and avatar so teammates never mistake bot output for you."></div>
         </div>
 
         <div class="quiz-card" data-answer="unverified">
@@ -875,15 +1065,32 @@
         </div>
 
         <div class="quiz-card" data-answer="owner">
-          <div class="quiz-q">3. After you say “go ahead,” an Orca bot runs <code>gh repo create</code> or pushes a branch and opens a pull request from a worker worktree.</div>
+          <div class="quiz-q">3. After you say “go ahead,” an Orca bot runs <code>gh repo create</code>, or pushes a branch and opens a pull request.</div>
           <div class="quiz-opts">
             <button class="quiz-opt" data-choice="bot" onclick="pickQuiz(this, 'bot')">Runs under a sandboxed bot GitHub user</button>
             <button class="quiz-opt" data-choice="owner" onclick="pickQuiz(this, 'owner')">Executes as you via host gh / SSH logins</button>
             <button class="quiz-opt" data-choice="unverified" onclick="pickQuiz(this, 'unverified')">Blocked by OS sandbox</button>
             <button class="quiz-opt" data-choice="tmux" onclick="pickQuiz(this, 'tmux')">Requires an open terminal tab</button>
           </div>
-          <div class="quiz-explain" data-right="<strong>Executes as you via host gh / SSH logins.</strong> GitHub and git operations act on your behalf using the machine’s signed-in credentials—which is why <code>SOUL.md</code> gates mutations on explicit approval and why unspecified flags (like an MIT license) carry your name."></div>
+          <div class="quiz-explain" data-right="<strong>Executes as you via your <code>gh</code> / SSH logins.</strong> GitHub and git commands run under your machine’s signed-in credentials—which is why <code>SOUL.md</code> waits for your approval first, and why anything left unspecified (like an <code>MIT</code> license) still carries your name."></div>
         </div>
+      </div>
+    </section>
+
+    <hr class="rule" id="looking-ahead" />
+
+    <!-- SECTION 06 -->
+    <section>
+      <div class="kicker">06 / Looking Ahead</div>
+      <h2 class="sec-title">Seeing the shift clearly so we can move fast.</h2>
+
+      <div class="prose">
+        <p>
+          Moving from a session harness to a persistent bot isn’t just swapping one tool for another—it’s a paradigm shift. State leaves the chat, voice separates from execution, and prompt rules stop being a substitute for knowing what credentials live in your shell.
+        </p>
+        <p>
+          There are several deeper levels this conversation can go from here: OS and container isolation, scoped credentials, and team norms once coworkers start invoking each other’s bots. A small script like <code>credential-audit</code> won’t solve all of that, and it isn’t meant to. It’s a practical step toward staying ahead of the shift—understanding what a new workflow actually changes on my own machine so that when it’s worth adopting, I can move my team forward fast.
+        </p>
       </div>
     </section>
 
@@ -1097,6 +1304,557 @@
       }
       exp.classList.add('visible');
     }
+
+    /* Hero Illustration WebGL Shader: Watercooler Glug Bubbles + Pam's Coffee Steam */
+    (function initBotsCoolerShader() {
+      var figure = document.querySelector('.bots-cooler-figure');
+      if (!figure) return;
+      var stage = figure.querySelector('.bots-cooler-stage');
+      var imgEl = figure.querySelector('.bots-cooler-img');
+      var canvas = figure.querySelector('.bots-cooler-canvas');
+      if (!stage || !imgEl || !canvas) return;
+
+      var gl = null;
+      try {
+        gl = canvas.getContext('webgl', {
+          alpha: false,
+          antialias: false,
+          depth: false,
+          stencil: false,
+          preserveDrawingBuffer: false,
+          powerPreference: 'low-power'
+        }) || canvas.getContext('experimental-webgl');
+      } catch (e) {
+        gl = null;
+      }
+      if (!gl) return;
+
+      var vertSrc = [
+        'attribute vec2 a_pos;',
+        'varying vec2 v_uv;',
+        'void main() {',
+        '  v_uv = vec2(a_pos.x * 0.5 + 0.5, 0.5 - a_pos.y * 0.5);',
+        '  gl_Position = vec4(a_pos, 0.0, 1.0);',
+        '}'
+      ].join('\n');
+
+      var fragSrc = [
+        'precision highp float;',
+        'varying vec2 v_uv;',
+        'uniform sampler2D u_tex;',
+        'uniform vec2 u_resolution;',
+        'uniform vec2 u_texSize;',
+        'uniform float u_time;',
+        'uniform vec4 u_b0;',
+        'uniform vec4 u_b1;',
+        'uniform vec4 u_b2;',
+        'uniform vec4 u_b3;',
+        'uniform vec4 u_b4;',
+        'uniform vec3 u_meniscus;',
+        '',
+        'float hash21(vec2 p) {',
+        '  p = fract(p * vec2(123.34, 456.21));',
+        '  p += dot(p, p + 45.32);',
+        '  return fract(p.x * p.y);',
+        '}',
+        '',
+        'float vnoise(vec2 p) {',
+        '  vec2 i = floor(p);',
+        '  vec2 f = fract(p);',
+        '  vec2 u = f * f * (3.0 - 2.0 * f);',
+        '  float a = hash21(i);',
+        '  float b = hash21(i + vec2(1.0, 0.0));',
+        '  float c = hash21(i + vec2(0.0, 1.0));',
+        '  float d = hash21(i + vec2(1.0, 1.0));',
+        '  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);',
+        '}',
+        '',
+        'float fbm(vec2 p) {',
+        '  float v = 0.0;',
+        '  float a = 0.5;',
+        '  mat2 rot = mat2(0.80, -0.60, 0.60, 0.80);',
+        '  for (int i = 0; i < 4; i++) {',
+        '    v += a * vnoise(p);',
+        '    p = rot * p * 2.03 + vec2(11.7, 5.3);',
+        '    a *= 0.5;',
+        '  }',
+        '  return v;',
+        '}',
+        '',
+        'vec2 curlField(vec2 p) {',
+        '  float e = 0.08;',
+        '  float n1 = vnoise(vec2(p.x, p.y + e));',
+        '  float n2 = vnoise(vec2(p.x, p.y - e));',
+        '  float n3 = vnoise(vec2(p.x + e, p.y));',
+        '  float n4 = vnoise(vec2(p.x - e, p.y));',
+        '  return vec2(n1 - n2, -(n3 - n4)) / (2.0 * e);',
+        '}',
+        '',
+        '/* Exact normalized top-down UV mask of the water inside the glass jug:',
+        '   x in [0.467, 0.531], meniscus y = 0.3435, bottom neck y = 0.4540,',
+        '   excluding Michael\'s fingertips on the right wall around (0.530, 0.369) */',
+        'float waterJugMask(vec2 uv) {',
+        '  float leftWall = smoothstep(0.4665, 0.4710, uv.x);',
+        '  float rightWall = 1.0 - smoothstep(0.5260, 0.5315, uv.x);',
+        '  float topSurface = smoothstep(0.3405, 0.3455, uv.y);',
+        '  float bottomCurve = 1.0 - smoothstep(0.4465, 0.4550, uv.y + abs(uv.x - 0.4990) * 0.16);',
+        '  vec2 fingerDelta = (uv - vec2(0.5315, 0.3690)) / vec2(0.0125, 0.0245);',
+        '  float fingerGuard = smoothstep(0.85, 1.25, length(fingerDelta));',
+        '  return leftWall * rightWall * topSurface * bottomCurve * fingerGuard;',
+        '}',
+        '',
+        'void evalBubble(vec2 uv, vec4 b, float aspect, inout vec2 refractOffset, inout vec3 rimLight, inout float shadowAcc) {',
+        '  if (b.w <= 0.001) return;',
+        '  vec2 diff = uv - b.xy;',
+        '  /* Slightly oblate dome-shaped rising air bubble in aspect-corrected space */',
+        '  vec2 metric = vec2(diff.x * aspect / 1.26, diff.y * (1.0 + 0.10 * max(0.0, diff.y / max(b.z, 0.001))));',
+        '  float ang = atan(metric.y, metric.x);',
+        '  float wobble = 1.0 + 0.055 * sin(ang * 3.0 + u_time * 7.8 + b.x * 45.0)',
+        '                     + 0.035 * cos(ang * 2.0 - u_time * 5.6);',
+        '  float rad = b.z * wobble;',
+        '  float r = length(metric) / max(rad, 0.0001);',
+        '  if (r > 1.45) return;',
+        '',
+        '  vec2 dir = metric / max(length(metric), 0.00001);',
+        '  float inside = 1.0 - smoothstep(0.88, 1.05, r);',
+        '  if (inside > 0.001) {',
+        '    float rClamped = min(r, 0.995);',
+        '    float nz = sqrt(max(0.0, 1.0 - rClamped * rClamped));',
+        '    vec2 lens = dir * rClamped * (1.0 - nz * 0.72) * rad * 1.55;',
+        '    refractOffset -= vec2(lens.x / aspect, lens.y) * inside * b.w;',
+        '',
+        '    float fresnel = pow(1.0 - nz, 1.85);',
+        '    vec3 n3 = normalize(vec3(dir.x * rClamped, dir.y * rClamped, nz));',
+        '    /* Dusk sunbeam from upper-right blinds + warm-teal water rim */',
+        '    float specMain = pow(max(0.0, dot(n3, normalize(vec3(0.46, -0.66, 0.59)))), 16.0);',
+        '    float specSub = pow(max(0.0, dot(n3, normalize(vec3(-0.45, -0.58, 0.68)))), 11.0);',
+        '    float rimRing = smoothstep(0.52, 0.90, r) * (1.0 - smoothstep(0.92, 1.06, r));',
+        '',
+        '    vec3 tealRim = vec3(0.64, 0.90, 0.84) * (fresnel * 0.48 + rimRing * 0.38);',
+        '    vec3 creamSpec = vec3(0.97, 0.92, 0.77) * (specMain * 0.92 + specSub * 0.34);',
+        '    vec3 innerLift = vec3(0.58, 0.82, 0.76) * (0.11 * nz);',
+        '    rimLight += (tealRim + creamSpec + innerLift) * inside * b.w;',
+        '',
+        '    float lowerArc = smoothstep(0.62, 0.95, r) * (1.0 - smoothstep(0.96, 1.08, r)) * max(0.0, dir.y + 0.15);',
+        '    shadowAcc += lowerArc * 0.22 * b.w;',
+        '  }',
+        '  float wake = smoothstep(0.95, 1.08, r) * (1.0 - smoothstep(1.08, 1.45, r));',
+        '  refractOffset += vec2(dir.x / aspect, dir.y) * wake * rad * 0.22 * b.w;',
+        '}',
+        '',
+        'void main() {',
+        '  /* Exact object-fit: cover UV mapping so canvas matches <img> pixel-for-pixel */',
+        '  float canvasAspect = u_resolution.x / max(u_resolution.y, 1.0);',
+        '  float texAspect = u_texSize.x / u_texSize.y;',
+        '  vec2 scale = vec2(1.0);',
+        '  if (canvasAspect > texAspect) {',
+        '    scale.y = texAspect / canvasAspect;',
+        '  } else {',
+        '    scale.x = canvasAspect / texAspect;',
+        '  }',
+        '  vec2 texUv = (v_uv - 0.5) * scale + 0.5;',
+        '',
+        '  vec2 refractOffset = vec2(0.0);',
+        '  vec3 waterAdd = vec3(0.0);',
+        '  float waterShadow = 0.0;',
+        '',
+        '  /* 1. Watercooler jug bubbles & meniscus surface shimmer */',
+        '  if (texUv.x > 0.455 && texUv.x < 0.542 && texUv.y > 0.330 && texUv.y < 0.465) {',
+        '    float jMask = waterJugMask(texUv);',
+        '    if (jMask > 0.001) {',
+        '      evalBubble(texUv, u_b0, texAspect, refractOffset, waterAdd, waterShadow);',
+        '      evalBubble(texUv, u_b1, texAspect, refractOffset, waterAdd, waterShadow);',
+        '      evalBubble(texUv, u_b2, texAspect, refractOffset, waterAdd, waterShadow);',
+        '      evalBubble(texUv, u_b3, texAspect, refractOffset, waterAdd, waterShadow);',
+        '      evalBubble(texUv, u_b4, texAspect, refractOffset, waterAdd, waterShadow);',
+        '      refractOffset *= jMask;',
+        '      waterAdd *= jMask;',
+        '      waterShadow *= jMask;',
+        '    }',
+        '',
+        '    /* Meniscus waterline at uv.y ~ 0.3435 (band 0.3375..0.3495, x 0.468..0.523) */',
+        '    float mHoriz = smoothstep(0.4675, 0.4730, texUv.x) * (1.0 - smoothstep(0.5180, 0.5245, texUv.x));',
+        '    float mBand = exp(-pow((texUv.y - 0.3435) / 0.0046, 2.0)) * mHoriz;',
+        '    if (mBand > 0.002) {',
+        '      float distFromHit = abs(texUv.x - u_meniscus.x);',
+        '      float burstWave = sin(distFromHit * 260.0 - u_meniscus.y * 22.0)',
+        '                      * exp(-distFromHit * 36.0)',
+        '                      * u_meniscus.z;',
+        '      float idleWave = sin(texUv.x * 145.0 + u_time * 1.8) * cos(texUv.x * 92.0 - u_time * 1.25) * 0.14;',
+        '      float totalWave = burstWave + idleWave;',
+        '      refractOffset.y += totalWave * 0.0032 * mBand;',
+        '      refractOffset.x += burstWave * 0.0016 * mBand;',
+        '      float glint = max(0.0, burstWave) * 0.42 + abs(burstWave) * 0.18 + max(0.0, idleWave) * 0.08;',
+        '      waterAdd += vec3(0.80, 0.92, 0.85) * glint * mBand;',
+        '    }',
+        '  }',
+        '',
+        '  vec2 sampleUv = clamp(texUv + refractOffset, vec2(0.001), vec2(0.999));',
+        '  vec3 col = texture2D(u_tex, sampleUv).rgb;',
+        '  col = col * (1.0 - waterShadow) + waterAdd;',
+        '',
+        '  /* 2. Pam\'s terracotta coffee mug steam:',
+        '     Rim center = (0.2424, 0.3870), inner width = [0.2315, 0.2535],',
+        '     rising and curling gently from uv.y = 0.3885 up to uv.y = 0.2780 */',
+        '  if (texUv.x > 0.214 && texUv.x < 0.288 && texUv.y > 0.276 && texUv.y < 0.391) {',
+        '    float h = (0.3885 - texUv.y) / 0.1105;',
+        '    if (h > 0.0 && h < 1.0) {',
+        '      /* Gentle rightward room draft curls across Pam\'s dark slate cardigan & olive wall */',
+        '      float drift = 0.0115 * pow(h, 1.15) + 0.0028 * sin(h * 4.8 - u_time * 1.18);',
+        '      float cx = 0.2435 + drift;',
+        '      float halfW = mix(0.0105, 0.0245, smoothstep(0.0, 1.0, h));',
+        '      float nx = (texUv.x - cx) / halfW;',
+        '      float horizEnv = 1.0 - smoothstep(0.88, 1.38, abs(nx));',
+        '',
+        '      vec2 p = vec2((texUv.x - cx) * 58.0, h * 3.6 - u_time * 0.46);',
+        '      vec2 curl = curlField(p * 1.20 + vec2(0.0, -u_time * 0.20));',
+        '      float nA = fbm(p + curl * 0.68);',
+        '      float nB = fbm(p * 1.95 - curl * 0.48 + vec2(4.2, -u_time * 0.32));',
+        '      float wispBreak = 0.48 + 0.72 * smoothstep(0.24, 0.72, nA * 0.62 + nB * 0.38);',
+        '',
+        '      /* Two slender intertwined S-curling steam ribbons + soft vapour at the coffee rim */',
+        '      float c1 = 0.42 * sin(h * 6.8 - u_time * 1.45 + (nA - 0.5) * 2.4) - 0.10 * (1.0 - h);',
+        '      float c2 = -0.36 * cos(h * 5.4 - u_time * 1.12 + (nB - 0.5) * 2.6) + 0.22 * h;',
+        '      float tendril1 = exp(-pow((nx - c1) / (0.20 + 0.11 * h), 2.0));',
+        '      float tendril2 = exp(-pow((nx - c2) / (0.18 + 0.13 * h), 2.0));',
+        '      float rimVapour = exp(-pow((texUv.x - 0.2428) / 0.0088, 2.0)) * (1.0 - smoothstep(0.0, 0.28, h)) * 0.38;',
+        '',
+        '      float ribbons = (tendril1 * 0.95 + tendril2 * 0.78) * wispBreak + rimVapour;',
+        '      float baseFade = smoothstep(0.0, 0.055, h);',
+        '      float rimClip = mix(1.0 - smoothstep(0.0102, 0.0132, abs(texUv.x - 0.2424)), 1.0, smoothstep(0.0, 0.14, h));',
+        '      float topDissolve = pow(1.0 - smoothstep(0.18, 1.0, h), 1.42);',
+        '',
+        '      float steamAlpha = clamp(ribbons * horizEnv * baseFade * rimClip * topDissolve * 0.46, 0.0, 0.42);',
+        '      /* Gruvbox warm cream #ebdbb2 */',
+        '      vec3 warmCream = mix(vec3(0.945, 0.878, 0.725), vec3(0.922, 0.859, 0.698), smoothstep(0.0, 0.55, h));',
+        '      col = mix(col, warmCream, steamAlpha);',
+        '    }',
+        '  }',
+        '',
+        '  gl_FragColor = vec4(col, 1.0);',
+        '}'
+      ].join('\n');
+
+      function compileShader(type, src) {
+        var sh = gl.createShader(type);
+        if (!sh) return null;
+        gl.shaderSource(sh, src);
+        gl.compileShader(sh);
+        if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+          gl.deleteShader(sh);
+          return null;
+        }
+        return sh;
+      }
+
+      var vs = compileShader(gl.VERTEX_SHADER, vertSrc);
+      var fs = compileShader(gl.FRAGMENT_SHADER, fragSrc);
+      if (!vs || !fs) return;
+
+      var prog = gl.createProgram();
+      gl.attachShader(prog, vs);
+      gl.attachShader(prog, fs);
+      gl.linkProgram(prog);
+      if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return;
+      gl.useProgram(prog);
+
+      var quadBuf = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+      gl.bufferData(
+        gl.ARRAY_BUFFER,
+        new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]),
+        gl.STATIC_DRAW
+      );
+      var aPosLoc = gl.getAttribLocation(prog, 'a_pos');
+      gl.enableVertexAttribArray(aPosLoc);
+      gl.vertexAttribPointer(aPosLoc, 2, gl.FLOAT, false, 0, 0);
+
+      var uTex = gl.getUniformLocation(prog, 'u_tex');
+      var uRes = gl.getUniformLocation(prog, 'u_resolution');
+      var uTexSize = gl.getUniformLocation(prog, 'u_texSize');
+      var uTime = gl.getUniformLocation(prog, 'u_time');
+      var uBubbles = [
+        gl.getUniformLocation(prog, 'u_b0'),
+        gl.getUniformLocation(prog, 'u_b1'),
+        gl.getUniformLocation(prog, 'u_b2'),
+        gl.getUniformLocation(prog, 'u_b3'),
+        gl.getUniformLocation(prog, 'u_b4')
+      ];
+      var uMeniscus = gl.getUniformLocation(prog, 'u_meniscus');
+
+      var tex = gl.createTexture();
+      var texWidth = 1376;
+      var texHeight = 768;
+      var textureReady = false;
+
+      var mqlReduced = window.matchMedia
+        ? window.matchMedia('(prefers-reduced-motion: reduce)')
+        : null;
+      var reducedMotion = mqlReduced ? mqlReduced.matches : false;
+      var isInView = true;
+      var isPageVisible = !document.hidden;
+      var rafId = 0;
+      var lastFrameMs = 0;
+      var simTime = 0;
+
+      /* Deterministic organic variation between 4.0s and 5.0s (~4.5s mean) */
+      function seededUnit(n) {
+        var x = Math.sin(n * 127.1 + 311.7) * 43758.5453;
+        return x - Math.floor(x);
+      }
+
+      var cycleIdx = 0;
+      var burstAge = 3.35; /* First subtle glug arrives ~1.1s after initial view */
+      var cycleDuration = 4.45;
+
+      function getCycleSpec(idx) {
+        var r1 = seededUnit(idx * 3 + 1);
+        var r2 = seededUnit(idx * 3 + 2);
+        var r3 = seededUnit(idx * 3 + 3);
+        return {
+          interval: 4.0 + r1 * 1.0,
+          trailCount: 2 + Math.floor(r2 * 3), /* 2, 3, or 4 trailing bubbles */
+          driftSign: r3 > 0.5 ? 1 : -1,
+          phaseSeed: r2 * 6.28318
+        };
+      }
+
+      var curSpec = getCycleSpec(0);
+      cycleDuration = curSpec.interval;
+
+      function syncCanvasSize() {
+        var rect = stage.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        var dpr = Math.min(window.devicePixelRatio || 1, 2);
+        var w = Math.max(1, Math.round(rect.width * dpr));
+        var h = Math.max(1, Math.round(rect.height * dpr));
+        if (canvas.width !== w || canvas.height !== h) {
+          canvas.width = w;
+          canvas.height = h;
+          gl.viewport(0, 0, w, h);
+        }
+      }
+
+      var bubbleState = [
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
+        [0, 0, 0, 0]
+      ];
+      var meniscusState = [0.499, 0, 0];
+
+      function updatePhysics(dt) {
+        if (reducedMotion) {
+          for (var k = 0; k < 5; k++) bubbleState[k][3] = 0;
+          meniscusState[2] = 0;
+          return;
+        }
+
+        simTime += dt;
+        burstAge += dt;
+        if (burstAge >= cycleDuration) {
+          burstAge -= cycleDuration;
+          cycleIdx += 1;
+          curSpec = getCycleSpec(cycleIdx);
+          cycleDuration = curSpec.interval;
+        }
+
+        var yStart = 0.4515;
+        var yEnd = 0.3440;
+        var baseCenterX = 0.4988;
+        var delays = [0.0, 0.20, 0.39, 0.57, 0.73];
+        var durations = [1.46, 1.38, 1.32, 1.26, 1.20];
+        var radii = [0.0086, 0.0056, 0.0043, 0.0033, 0.0026];
+        var xOffsets = [0.0, -0.0052, 0.0048, -0.0030, 0.0034];
+
+        var leadImpactX = baseCenterX;
+
+        for (var i = 0; i < 5; i++) {
+          var activeSlot = i === 0 || i <= curSpec.trailCount;
+          var localT = burstAge - delays[i];
+          var dur = durations[i];
+          if (!activeSlot || localT < 0 || localT > dur) {
+            bubbleState[i][3] = 0.0;
+            continue;
+          }
+          var u = localT / dur;
+          /* Gentle buoyant acceleration from jug neck, easing slightly at meniscus */
+          var eased = 0.78 * u + 0.22 * u * u;
+          var by = yStart + (yEnd - yStart) * eased;
+          var wobbleAmp = (i === 0 ? 0.0036 : 0.0028) * Math.sin(u * Math.PI);
+          var bx =
+            baseCenterX +
+            curSpec.driftSign * xOffsets[i] * Math.min(1.0, u * 1.7) +
+            wobbleAmp * Math.sin(u * 7.8 + curSpec.phaseSeed + i * 1.85);
+
+          var fadeIn = Math.min(1.0, u / 0.10);
+          var fadeOut = u > 0.88 ? Math.max(0.0, 1.0 - (u - 0.88) / 0.12) : 1.0;
+          var grow = 0.74 + 0.26 * Math.min(1.0, u / 0.18);
+
+          bubbleState[i][0] = bx;
+          bubbleState[i][1] = by;
+          bubbleState[i][2] = radii[i] * grow;
+          bubbleState[i][3] = fadeIn * fadeOut;
+
+          if (i === 0) leadImpactX = bx;
+        }
+
+        /* Meniscus ripple starts as lead bubble reaches waterline (~1.28s) and decays softly */
+        var rippleStart = 1.28;
+        var rippleDur = 1.25;
+        if (burstAge >= rippleStart && burstAge <= rippleStart + rippleDur) {
+          var rp = (burstAge - rippleStart) / rippleDur;
+          var env = Math.sin(Math.min(1.0, rp / 0.16) * (Math.PI * 0.5)) * Math.pow(1.0 - rp, 1.45);
+          meniscusState[0] = leadImpactX;
+          meniscusState[1] = rp;
+          meniscusState[2] = env;
+        } else {
+          meniscusState[2] = 0.0;
+        }
+      }
+
+      function drawScene() {
+        if (!textureReady) return;
+        syncCanvasSize();
+        gl.useProgram(prog);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.uniform1i(uTex, 0);
+        gl.uniform2f(uRes, canvas.width, canvas.height);
+        gl.uniform2f(uTexSize, texWidth, texHeight);
+        gl.uniform1f(uTime, simTime);
+        for (var i = 0; i < 5; i++) {
+          var b = bubbleState[i];
+          gl.uniform4f(uBubbles[i], b[0], b[1], b[2], b[3]);
+        }
+        gl.uniform3f(uMeniscus, meniscusState[0], meniscusState[1], meniscusState[2]);
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+      }
+
+      function shouldAnimate() {
+        return textureReady && isInView && isPageVisible && !reducedMotion;
+      }
+
+      function tick(nowMs) {
+        rafId = 0;
+        if (!shouldAnimate()) return;
+        var dt = lastFrameMs ? Math.min(0.05, Math.max(0.0, (nowMs - lastFrameMs) / 1000)) : 0.016;
+        lastFrameMs = nowMs;
+        updatePhysics(dt);
+        drawScene();
+        rafId = window.requestAnimationFrame(tick);
+      }
+
+      function updateLoopState() {
+        if (shouldAnimate()) {
+          if (!rafId) {
+            lastFrameMs = 0;
+            rafId = window.requestAnimationFrame(tick);
+          }
+        } else {
+          if (rafId) {
+            window.cancelAnimationFrame(rafId);
+            rafId = 0;
+          }
+          if (textureReady && reducedMotion) {
+            updatePhysics(0);
+            drawScene();
+          }
+        }
+      }
+
+      function uploadTexture(sourceImg) {
+        if (textureReady) return;
+        texWidth = sourceImg.naturalWidth || 1376;
+        texHeight = sourceImg.naturalHeight || 768;
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        try {
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, sourceImg);
+        } catch (err) {
+          return;
+        }
+        textureReady = true;
+        updatePhysics(0);
+        drawScene();
+        canvas.classList.add('is-ready');
+        updateLoopState();
+      }
+
+      if (imgEl.complete && imgEl.naturalWidth > 0) {
+        uploadTexture(imgEl);
+      } else {
+        imgEl.addEventListener('load', function() {
+          uploadTexture(imgEl);
+        }, { once: true });
+      }
+
+      if (typeof IntersectionObserver !== 'undefined') {
+        var io = new IntersectionObserver(function(entries) {
+          for (var i = 0; i < entries.length; i++) {
+            isInView = entries[i].isIntersecting;
+          }
+          updateLoopState();
+        }, { threshold: 0.01 });
+        io.observe(stage);
+      }
+
+      document.addEventListener('visibilitychange', function() {
+        isPageVisible = !document.hidden;
+        updateLoopState();
+      });
+
+      if (mqlReduced) {
+        var onMotionChange = function(ev) {
+          reducedMotion = ev.matches;
+          updateLoopState();
+        };
+        if (typeof mqlReduced.addEventListener === 'function') {
+          mqlReduced.addEventListener('change', onMotionChange);
+        } else if (typeof mqlReduced.addListener === 'function') {
+          mqlReduced.addListener(onMotionChange);
+        }
+      }
+
+      if (typeof ResizeObserver !== 'undefined') {
+        var ro = new ResizeObserver(function() {
+          if (textureReady) drawScene();
+        });
+        ro.observe(stage);
+      } else {
+        window.addEventListener('resize', function() {
+          if (textureReady) drawScene();
+        }, { passive: true });
+      }
+
+      canvas._botsCooler = {
+        getState: function() {
+          return {
+            textureReady: textureReady,
+            running: Boolean(rafId),
+            isInView: isInView,
+            isPageVisible: isPageVisible,
+            reducedMotion: reducedMotion,
+            cycleIdx: cycleIdx,
+            burstAge: Number(burstAge.toFixed(3)),
+            cycleDuration: Number(cycleDuration.toFixed(3)),
+            trailCount: curSpec.trailCount,
+            bubbles: bubbleState,
+            meniscus: meniscusState
+          };
+        },
+        seekBurstAge: function(ageSec) {
+          burstAge = ageSec;
+          updatePhysics(0);
+          drawScene();
+        }
+      };
+    })();
   </script>
 </body>
 </html>

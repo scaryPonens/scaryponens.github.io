@@ -14,6 +14,11 @@ import {
   applyThought,
   discoverSlots
 } from './thought-sync.mjs'
+import {
+  loadToolHoverAssets,
+  injectToolHoverCards,
+  generateHTML
+} from './build-thoughts.js'
 
 const execFileAsync = promisify(execFile)
 
@@ -89,12 +94,23 @@ async function main() {
       )
     }
 
-    // Confirm special slot coverage on shape-pitch (figcaption + sidenote) & orca-bots-on-our-behalf (sidenote + quiz)
+    // Confirm special slot coverage on shape-pitch (figcaption + sidenote) & orca-bots-on-our-behalf (preamble + sidenote + quiz + sec6)
     const shapePitchMd = await readFile(join(tempEditsDir, '20261124-shape-pitch.md'), 'utf-8')
     assert(shapePitchMd.includes('<!-- slot: sec1.figcaption.1 -->'), 'Missing sec1.figcaption.1 on shape-pitch')
     assert(shapePitchMd.includes('<!-- slot: sec2.sidenote.1.label -->'), 'Missing sec2.sidenote.1.label on shape-pitch')
     assert(shapePitchMd.includes('<!-- slot: sec2.sidenote.1.body -->'), 'Missing sec2.sidenote.1.body on shape-pitch')
     assert(shapePitchMd.includes('<!-- slot: sec5.quiz.1.explain -->'), 'Missing sec5.quiz.1.explain on shape-pitch')
+    assert(!shapePitchMd.includes('<!-- slot: preamble.'), 'shape-pitch should not emit preamble slots')
+
+    const orcaWithBotsMd = await readFile(join(tempEditsDir, '20261124-orca-with-bots.md'), 'utf-8')
+    assert(!orcaWithBotsMd.includes('<!-- slot: preamble.'), 'orca-with-bots should not emit preamble slots')
+
+    const orcaBehalfMd = await readFile(join(tempEditsDir, '20261126-orca-bots-on-our-behalf.md'), 'utf-8')
+    assert(orcaBehalfMd.includes('<!-- slot: preamble.label -->'), 'Missing preamble.label on orca-bots-on-our-behalf')
+    assert(orcaBehalfMd.includes('<!-- slot: preamble.body -->'), 'Missing preamble.body on orca-bots-on-our-behalf')
+    assert(orcaBehalfMd.includes('<!-- slot: sec6.kicker -->'), 'Missing sec6.kicker on orca-bots-on-our-behalf')
+    assert(orcaBehalfMd.includes('<!-- slot: sec6.title -->'), 'Missing sec6.title on orca-bots-on-our-behalf')
+    assert(orcaBehalfMd.includes('<!-- slot: sec6.prose.1 -->'), 'Missing sec6.prose.1 on orca-bots-on-our-behalf')
 
     console.log('2. Verifying edit propagation (hero.lead -> p.lead + excerpt:, hero.title -> h1 + title:)...')
     const targetSlug = '20261126-orca-bots-on-our-behalf'
@@ -108,11 +124,24 @@ async function main() {
 
     const newLeadMd =
       'Edited in `Obsidian` with **bold emphasis**, *italic voice*, and an [external link](https://example.com/test)—verifying live sync.'
-    const editedMd = origEditMd.replace(
-      /<!-- slot: hero\.lead -->\n[\s\S]*?(?=\n\n<!-- slot: hero\.companion -->)/,
-      `<!-- slot: hero.lead -->\n${newLeadMd}`
-    )
-    assert.notEqual(editedMd, origEditMd, 'Failed to replace hero.lead in test Markdown')
+    const newPreambleMd =
+      'Updated preamble referencing `Orca` and `credential-audit` cleanly.'
+    const newSec6Md =
+      'First closing paragraph with `Claude Code`.\n\nSecond closing paragraph with **scoped credentials**.'
+    const editedMd = origEditMd
+      .replace(
+        /<!-- slot: hero\.lead -->\n[\s\S]*?(?=\n\n<!-- slot: hero\.companion -->)/,
+        `<!-- slot: hero.lead -->\n${newLeadMd}`
+      )
+      .replace(
+        /<!-- slot: preamble\.body -->\n[\s\S]*?(?=\n\n<!-- ─── Section 01 ─── -->)/,
+        `<!-- slot: preamble.body -->\n${newPreambleMd}`
+      )
+      .replace(
+        /<!-- slot: sec6\.prose\.1 -->\n[\s\S]*$/,
+        `<!-- slot: sec6.prose.1 -->\n${newSec6Md}\n`
+      )
+    assert.notEqual(editedMd, origEditMd, 'Failed to replace hero.lead / preamble.body / sec6.prose.1 in test Markdown')
     await writeFile(targetEditPath, editedMd, 'utf-8')
 
     const applyRes = await applyThought(targetSlug, {
@@ -140,6 +169,19 @@ async function main() {
     assert(
       leadHtml.includes('<a href="https://example.com/test" target="_blank" rel="noopener noreferrer">external link</a>'),
       'p.lead missing external link attributes'
+    )
+    assert(
+      $patched('aside.preamble .preamble-body p').html().trim().includes('<code>Orca</code>'),
+      'preamble.body missing updated <code>Orca</code>'
+    )
+    assert.equal(
+      $patched('section').last().find('.prose > p').length,
+      2,
+      'sec6.prose.1 should have 2 paragraphs after edit'
+    )
+    assert(
+      $patched('section').last().find('.prose').html().includes('<strong>scoped credentials</strong>'),
+      'sec6.prose.1 missing updated <strong>scoped credentials</strong>'
     )
 
     const parsedFm = matter(patchedCompanion)
@@ -229,6 +271,30 @@ async function main() {
     const behaviorJs = $w('body script:not([type="application/json"])').last().html()
     parseAst(behaviorJs)
     console.log('   ✓ Widget JSON copy extracted, patched via JSON.stringify, and JS AST verified intact')
+
+    console.log('5. Verifying build-time tool hover card glossary & injection (custom_html + Markdown)...')
+    const hoverAssets = await loadToolHoverAssets()
+    const rawBotsHtml = await readFile(join(projectRoot, 'thoughts', '20261126-orca-bots-on-our-behalf.html'), 'utf-8')
+    assert(!rawBotsHtml.includes('data-tool-hover-card'), 'Source custom_html must not contain build-injected hover card markup')
+
+    const injectedCustom = injectToolHoverCards(rawBotsHtml, hoverAssets)
+    assert.equal(injectToolHoverCards(injectedCustom, hoverAssets), injectedCustom, 'injectToolHoverCards must be idempotent')
+
+    const $ic = cheerio.load(injectedCustom)
+    assert.equal($ic('head style[data-tool-hover-card]').length, 1, 'Missing injected <style> in custom_html')
+    assert.equal($ic('body script#tool-glossary[type="application/json"]').length, 1, 'Missing #tool-glossary JSON in custom_html')
+    const glossaryData = JSON.parse($ic('script#tool-glossary').html())
+    const expectedToolIds = ['gt', 'gh', 'herdr', 'pi', 'claude-code', 'orca', 'hermes', 'grok-bot', 'orca-linear', 'tmux']
+    assert.deepEqual(glossaryData.tools.map(t => t.id), expectedToolIds, 'Glossary tool IDs mismatch')
+    const hoverRuntimeJs = $ic('body script[data-tool-hover-card]:not([type="application/json"])').html()
+    parseAst(hoverRuntimeJs)
+
+    const sampleMdHtml = generateHTML('Sample Markdown Note', '<p>Testing <code>gh</code> and <code>tmux</code>.</p>', '', 'sample-note')
+    const injectedMd = injectToolHoverCards(sampleMdHtml, hoverAssets)
+    const $im = cheerio.load(injectedMd)
+    assert.equal($im('head style[data-tool-hover-card]').length, 1, 'Missing injected <style> in Markdown HTML')
+    assert.equal($im('body script#tool-glossary[type="application/json"]').length, 1, 'Missing #tool-glossary JSON in Markdown HTML')
+    console.log('   ✓ Tool glossary (10 tools), runtime JS AST, and custom_html + Markdown injection verified')
 
     console.log('\nAll thought-sync verification checks passed!')
   } finally {
