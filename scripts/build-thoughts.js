@@ -1,4 +1,4 @@
-import { readdir, readFile, mkdir, writeFile, copyFile, rm } from 'fs/promises'
+import { readdir, readFile, mkdir, writeFile, rm } from 'fs/promises'
 import { join, resolve, basename, extname, sep } from 'path'
 import { pathToFileURL } from 'url'
 import matter from 'gray-matter'
@@ -21,10 +21,65 @@ import {
 const thoughtsDir = join(projectRoot, 'thoughts')
 const outputDir = join(projectRoot, 'dist', 'blog')
 const publicBlogDir = join(projectRoot, 'public', 'blog')
+const toolGlossaryPath = join(thoughtsDir, 'tool-glossary.json')
+const toolHoverCssPath = join(projectRoot, 'scripts', 'lib', 'tool-hover-card.css')
+const toolHoverJsPath = join(projectRoot, 'scripts', 'lib', 'tool-hover-card.js')
 
 const marked = getMarked()
 
-function generateHTML(title, content, css, slug, { unlisted = false } = {}) {
+export async function loadToolHoverAssets() {
+  const [rawGlossary, hoverCss, hoverJs] = await Promise.all([
+    readFile(toolGlossaryPath, 'utf-8'),
+    readFile(toolHoverCssPath, 'utf-8'),
+    readFile(toolHoverJsPath, 'utf-8')
+  ])
+
+  const parsedGlossary = JSON.parse(rawGlossary)
+  if (!parsedGlossary || !Array.isArray(parsedGlossary.tools) || parsedGlossary.tools.length === 0) {
+    throw new Error('thoughts/tool-glossary.json must contain a non-empty "tools" array')
+  }
+  for (const item of parsedGlossary.tools) {
+    if (!item.id || !Array.isArray(item.tokens) || item.tokens.length === 0 || !item.description) {
+      throw new Error(`Invalid tool glossary entry: ${JSON.stringify(item)}`)
+    }
+    if (item.url !== null && item.url !== undefined && !/^https:\/\//i.test(String(item.url))) {
+      throw new Error(`Tool glossary URL for "${item.id}" must use https:// or be null: ${item.url}`)
+    }
+  }
+
+  const compactGlossary = JSON.stringify(parsedGlossary).replace(/<\//g, '<\\/')
+  const headStyleBlock = `\n  <style data-tool-hover-card>\n${hoverCss.trim()}\n  </style>\n`
+  const bodyScriptBlock =
+    `\n  <script id="tool-glossary" type="application/json" data-tool-hover-card>${compactGlossary}</script>` +
+    `\n  <script data-tool-hover-card>\n${hoverJs.trim()}\n  </script>\n`
+
+  return { headStyleBlock, bodyScriptBlock }
+}
+
+export function injectToolHoverCards(rawHtml, { headStyleBlock, bodyScriptBlock }) {
+  if (rawHtml.includes('data-tool-hover-card')) {
+    return rawHtml
+  }
+
+  let out = rawHtml
+  const headCloseMatch = out.match(/<\/head>/i)
+  if (headCloseMatch && headCloseMatch.index !== undefined) {
+    out = out.slice(0, headCloseMatch.index) + headStyleBlock + out.slice(headCloseMatch.index)
+  } else {
+    out = headStyleBlock + out
+  }
+
+  const bodyCloseIdx = out.toLowerCase().lastIndexOf('</body>')
+  if (bodyCloseIdx !== -1) {
+    out = out.slice(0, bodyCloseIdx) + bodyScriptBlock + out.slice(bodyCloseIdx)
+  } else {
+    out = out + bodyScriptBlock
+  }
+
+  return out
+}
+
+export function generateHTML(title, content, css, slug, { unlisted = false } = {}) {
   const GISCUS_REPO = 'scaryPonens/scaryponens.github.io'
   const GISCUS_REPO_ID = 'MDEwOlJlcG9zaXRvcnk1ODIxMzc2MQ=='
   const GISCUS_CATEGORY = 'Comments'
@@ -238,7 +293,10 @@ export async function buildThoughts() {
     await mkdir(outputDir, { recursive: true })
     await mkdir(publicBlogDir, { recursive: true })
 
-    const css = await getBlogCSS()
+    const [css, toolHoverAssets] = await Promise.all([
+      getBlogCSS(),
+      loadToolHoverAssets()
+    ])
 
     const assetsSourceDir = join(thoughtsDir, 'assets')
     await copyAssets(assetsSourceDir, join(outputDir, 'assets'))
@@ -279,8 +337,10 @@ export async function buildThoughts() {
       }
 
       if (entry.custom_html) {
-        await copyFile(entry.custom_html, join(outputDir, entry.filename))
-        await copyFile(entry.custom_html, join(publicBlogDir, entry.filename))
+        const rawCustomHtml = await readFile(entry.custom_html, 'utf-8')
+        const enhancedCustomHtml = injectToolHoverCards(rawCustomHtml, toolHoverAssets)
+        await writeFile(join(outputDir, entry.filename), enhancedCustomHtml, 'utf-8')
+        await writeFile(join(publicBlogDir, entry.filename), enhancedCustomHtml, 'utf-8')
 
         if (entry.unlisted) {
           console.log(`⊘ Unlisted custom HTML (copied, omitted from manifest/feed): ${entry.filename}`)
@@ -298,9 +358,10 @@ export async function buildThoughts() {
         continue
       }
 
-      const html = generateHTML(entry.title, entry.htmlContent, css, entry.slug, {
+      const rawGeneratedHtml = generateHTML(entry.title, entry.htmlContent, css, entry.slug, {
         unlisted: entry.unlisted
       })
+      const html = injectToolHoverCards(rawGeneratedHtml, toolHoverAssets)
 
       await writeFile(join(outputDir, entry.filename), html, 'utf-8')
       await writeFile(join(publicBlogDir, entry.filename), html, 'utf-8')

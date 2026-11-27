@@ -1,0 +1,104 @@
+{
+  "tools": [
+    {
+      "id": "gt",
+      "title": "Graphite CLI",
+      "kind": "CLI",
+      "tokens": ["gt"],
+      "caseSensitive": true,
+      "description": "Graphite’s command-line tool for creating, rebasing, submitting, and syncing stacked pull requests on GitHub.",
+      "url": "https://graphite.com/docs/graphite-cli",
+      "urlLabel": "graphite.com/docs/graphite-cli"
+    },
+    {
+      "id": "gh",
+      "title": "GitHub CLI",
+      "kind": "CLI",
+      "tokens": ["gh"],
+      "caseSensitive": true,
+      "description": "GitHub’s official command-line client for pull requests, issues, checks, repository creation, and authenticated API calls.",
+      "url": "https://cli.github.com/",
+      "urlLabel": "cli.github.com"
+    },
+    {
+      "id": "herdr",
+      "title": "Herdr",
+      "kind": "Terminal multiplexer",
+      "tokens": ["Herdr", "herdr"],
+      "caseSensitive": false,
+      "description": "Open-source terminal multiplexer built for coding agents, organizing persistent workspaces, tabs, and panes while tracking live agent state.",
+      "url": "https://herdr.dev/",
+      "urlLabel": "herdr.dev"
+    },
+    {
+      "id": "pi",
+      "title": "Pi",
+      "kind": "Coding harness",
+      "tokens": ["Pi"],
+      "caseSensitive": true,
+      "description": "Minimal, extensible terminal coding harness by Mario Zechner with file, shell, skill, and multi-model session tools.",
+      "url": "https://pi.dev/",
+      "urlLabel": "pi.dev"
+    },
+    {
+      "id": "claude-code",
+      "title": "Claude Code",
+      "kind": "Coding harness",
+      "tokens": ["Claude Code"],
+      "caseSensitive": false,
+      "description": "Anthropic’s interactive terminal coding harness that reads repositories, edits files, and runs shell commands in a live session.",
+      "url": "https://claude.com/product/claude-code",
+      "urlLabel": "claude.com/product/claude-code"
+    },
+    {
+      "id": "orca",
+      "title": "Orca",
+      "kind": "Multi-agent IDE",
+      "tokens": ["Orca"],
+      "caseSensitive": false,
+      "description": "Multi-agent development environment built around Git worktrees, orchestrated coding workers, and persistent event-driven bots.",
+      "url": "https://orca.dev/",
+      "urlLabel": "orca.dev"
+    },
+    {
+      "id": "hermes",
+      "title": "Hermes Agent",
+      "kind": "Persistent bot",
+      "tokens": ["Hermes", "Hermes Agent"],
+      "caseSensitive": false,
+      "description": "Open-source persistent agent runtime by Nous Research with cross-session memory, curated skills, and chat connectors.",
+      "url": "https://hermes-agent.nousresearch.com/",
+      "urlLabel": "hermes-agent.nousresearch.com"
+    },
+    {
+      "id": "grok-bot",
+      "title": "Grok Bot",
+      "kind": "Team bot",
+      "tokens": ["Grok Bot"],
+      "caseSensitive": false,
+      "description": "xAI’s workspace bot for collaboration platforms like Slack, answering in shared threads with team memory and connected tools.",
+      "url": "https://docs.x.ai/grok-bot/overview",
+      "urlLabel": "docs.x.ai/grok-bot"
+    },
+    {
+      "id": "orca-linear",
+      "title": "orca linear",
+      "kind": "Orca CLI",
+      "tokens": ["orca linear"],
+      "caseSensitive": false,
+      "description": "Orca’s built-in Linear subcommand for reading, searching, filing, and updating Linear issues under the workspace owner’s login.",
+      "url": null,
+      "urlLabel": null
+    },
+    {
+      "id": "tmux",
+      "title": "tmux",
+      "kind": "Terminal multiplexer",
+      "tokens": ["tmux"],
+      "caseSensitive": true,
+      "description": "Classic Unix terminal multiplexer that keeps shell sessions, windows, and split panes alive in the background across disconnects.",
+      "url": "https://github.com/tmux/tmux/wiki",
+      "urlLabel": "github.com/tmux/tmux"
+    }
+  ]
+}

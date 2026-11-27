@@ -8,6 +8,8 @@
   },
   "scripts": {
     "dev": "vite",
+    "thought:sync": "node scripts/thought-sync.mjs",
+    "test:thought-sync": "node scripts/test-thought-sync.mjs",
     "build:content": "node scripts/build-thoughts.js && node scripts/build-projects.js && node scripts/build-radar.js && node scripts/build-now.js && node scripts/build-feed.js",
     "build": "npm run build:content && vite build",
     "preview": "vite preview"
@@ -21,6 +23,7 @@
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
     "@vitejs/plugin-react": "^5.1.4",
+    "cheerio": "^1.2.0",
     "dotenv": "^17.3.1",
     "gray-matter": "^4.0.3",
     "highlight.js": "^11.9.0",
